@@ -1,0 +1,77 @@
+---
+title: "Entry layout"
+description: "Choose between a stacked form layout and a content-focused editor with a sidebar."
+---
+
+Collections and singletons both have an `entryLayout` option that controls how the editor is presented in the Admin UI.
+
+<ParamField path="entryLayout" type="'form' | 'content'" default="'form'">
+  - **`'form'`** (default) — all fields are stacked vertically in a single column.
+  - **`'content'`** — the designated rich-text field is displayed front and center, with all other fields moved into a collapsible sidebar.
+</ParamField>
+
+<Warning>
+  The `'content'` layout only takes effect when `format.contentField` references a `document`, `markdoc`, or `mdx` field. See [Format options](/concepts/format-options) for details.
+</Warning>
+
+---
+
+## Form layout (default)
+
+All fields are rendered in a top-to-bottom stack. This is the right choice for entries that are primarily structured data — for example, a product record with a name, price, category, and a short description.
+
+---
+
+## Content layout
+
+The `'content'` layout is designed for long-form writing. The rich-text editor occupies the full main column, and the remaining metadata fields are tucked into a sidebar panel. Think of it as the "focus" writing mode.
+
+```typescript
+blog: collection({
+  label: 'Blog posts',
+  path: 'src/content/blog/**',
+  entryLayout: 'content',
+  format: {
+    contentField: 'body',
+  },
+  schema: {
+    title: fields.slug({ name: { label: 'Title' } }),
+    publishedDate: fields.date({ label: 'Published date' }),
+    body: fields.markdoc({ label: 'Body' }),
+  },
+})
+```
+
+With the config above, the `body` field fills the main editor area. Fields like `title` and `publishedDate` appear in the sidebar.
+
+---
+
+## When to use each layout
+
+<Tabs>
+  <Tab title="Use 'form'">
+    - Entries are mostly structured data (prices, dates, URLs, selects).
+    - There is no rich-text field, or it is a minor part of the entry.
+    - Editors need to see all fields at a glance.
+  </Tab>
+  <Tab title="Use 'content'">
+    - The primary purpose of the entry is a long-form document (blog post, doc page, changelog entry).
+    - You have a `markdoc`, `mdx`, or `document` field designated as `format.contentField`.
+    - You want to minimize distractions for writers.
+  </Tab>
+</Tabs>
+
+---
+
+## Type signature
+
+See the latest `EntryLayout` type signature at [docsmill.dev](https://docsmill.dev/npm/@keystatic/core@latest#/.EntryLayout).
+
+<CardGroup cols={2}>
+  <Card title="Format options" icon="file-code" href="/concepts/format-options">
+    Set contentField to enable the content layout.
+  </Card>
+  <Card title="Collections" icon="layer-group" href="/concepts/collections">
+    Full reference for collection options.
+  </Card>
+</CardGroup>

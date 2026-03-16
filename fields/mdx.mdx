@@ -1,0 +1,263 @@
+---
+title: "fields.mdx()"
+description: "Stores rich text content as an MDX file with a WYSIWYG editor."
+---
+
+The `mdx` field is a rich text editor that reads and writes content in [MDX](https://mdxjs.com/) format. It stores content in a separate `.mdx` file (or inline when using `fields.mdx.inline()`). Choose `fields.mdx()` when your rendering pipeline is MDX-based and you need to use React components inside content.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript basic
+richText: fields.mdx({
+  label: 'Rich text',
+})
+```
+
+```typescript with options
+content: fields.mdx({
+  label: 'Content',
+  description: 'The main body of the post.',
+  options: {
+    bold: true,
+    italic: true,
+    heading: [1, 2, 3],
+    image: {
+      directory: 'public/images/posts',
+      publicPath: '/images/posts/',
+    },
+  },
+})
+```
+
+```typescript with content components
+content: fields.mdx({
+  label: 'Content',
+  components: {
+    // See the Content Components docs
+  },
+})
+```
+
+</CodeGroup>
+
+## Options
+
+<ParamField path="label" type="string" required>
+  The label shown above the field in the Admin UI.
+</ParamField>
+
+<ParamField path="description" type="string">
+  Helper text shown below the label in the Admin UI.
+</ParamField>
+
+<ParamField path="extension" type="'mdx' | 'md'">
+  The file extension used for the content file. Defaults to `'mdx'`. Set to `'md'` to use plain Markdown file extensions.
+</ParamField>
+
+<ParamField path="components" type="Record<string, ContentComponent>">
+  Custom content components that can be inserted into the editor. See the [Content Components](/concepts/content-components) docs for details.
+</ParamField>
+
+<ParamField path="options" type="MDXEditorOptions">
+  Controls which formatting toolbar items are shown in the editor. All options default to `true` unless specified.
+
+  <ParamField path="options.bold" type="boolean">
+    Enable bold text. Defaults to `true`.
+  </ParamField>
+
+  <ParamField path="options.italic" type="boolean">
+    Enable italic text. Defaults to `true`.
+  </ParamField>
+
+  <ParamField path="options.strikethrough" type="boolean">
+    Enable strikethrough text. Defaults to `true`.
+  </ParamField>
+
+  <ParamField path="options.code" type="boolean">
+    Enable inline code. Defaults to `true`.
+  </ParamField>
+
+  <ParamField path="options.heading" type="boolean | number[]">
+    Enable headings. Pass `true` to allow all levels (1–6), or an array such as `[1, 2, 3]` to restrict to specific levels. Defaults to `true`.
+  </ParamField>
+
+  <ParamField path="options.blockquote" type="boolean">
+    Enable blockquotes. Defaults to `true`.
+  </ParamField>
+
+  <ParamField path="options.orderedList" type="boolean">
+    Enable ordered (numbered) lists. Defaults to `true`.
+  </ParamField>
+
+  <ParamField path="options.unorderedList" type="boolean">
+    Enable unordered (bullet) lists. Defaults to `true`.
+  </ParamField>
+
+  <ParamField path="options.table" type="boolean">
+    Enable tables. Defaults to `true`.
+  </ParamField>
+
+  <ParamField path="options.link" type="boolean">
+    Enable hyperlinks. Defaults to `true`.
+  </ParamField>
+
+  <ParamField path="options.divider" type="boolean">
+    Enable horizontal dividers. Defaults to `true`.
+  </ParamField>
+
+  <ParamField path="options.codeBlock" type="boolean">
+    Enable fenced code blocks. Defaults to `true`.
+  </ParamField>
+
+  <ParamField path="options.image" type="boolean | object">
+    Controls inline image support inside the editor. Defaults to `true` (images enabled with default settings).
+
+    <ParamField path="options.image.directory" type="string">
+      The directory where images uploaded via the editor are stored. Defaults to the same directory as the entry.
+    </ParamField>
+
+    <ParamField path="options.image.publicPath" type="string">
+      The URL prefix prepended to image filenames when the content is read. For example, `'/images/posts/'`.
+    </ParamField>
+
+    <ParamField path="options.image.transformFilename" type="(originalFilename: string) => string">
+      A function to transform the filename of uploaded images.
+    </ParamField>
+
+    <ParamField path="options.image.schema" type="object">
+      Extra fields attached to each image node. By default includes `alt` (text) and `title` (hidden text).
+    </ParamField>
+  </ParamField>
+</ParamField>
+
+## MDX limitations
+
+### No import statements
+
+Keystatic statically analyses MDX content, so `import` statements inside the MDX file are not supported.
+
+```mdx
+# This will NOT work
+import { Card } from '../components/Card'
+
+<Card title="Example" />
+```
+
+Instead, pass components to whatever renderer you use:
+
+```tsx
+import { Card } from '../components/Card';
+
+<MdxRenderer components={{ Card }} />
+```
+
+### No raw HTML tags
+
+Raw HTML tags inside MDX are not supported. Use Markdown equivalents:
+
+```mdx
+# Use this
+[Keystatic website](https://keystatic.com)
+
+# Not this
+<a href="https://keystatic.com">Keystatic website</a>
+```
+
+## Reader API
+
+When read via the Reader API, `fields.mdx()` returns the raw MDX content as a `string`. You are responsible for rendering it.
+
+```typescript
+import { createReader } from '@keystatic/core/reader';
+import keystaticConfig from './keystatic.config';
+
+const reader = createReader(process.cwd(), keystaticConfig);
+const post = await reader.collections.posts.read('my-post');
+// post.content is a string of MDX source
+```
+
+### Rendering MDX content
+
+Use a library such as [next-mdx-remote](https://github.com/hashicorp/next-mdx-remote) or [mdx-bundler](https://github.com/kentcdodds/mdx-bundler) to compile and render the MDX string:
+
+```tsx
+import { MDXRemote } from 'next-mdx-remote/rsc';
+
+export default async function PostPage({ params }) {
+  const post = await reader.collections.posts.read(params.slug);
+  return <MDXRemote source={post.content} />;
+}
+```
+
+### Using `format.contentField`
+
+When a `mdx` field is the `format.contentField` of a collection, Keystatic writes the MDX content as the body of the entry file instead of a separate file:
+
+```typescript keystatic.config.ts
+posts: collection({
+  label: 'Posts',
+  slugField: 'title',
+  format: { contentField: 'content' },
+  schema: {
+    title: fields.slug({ name: { label: 'Title' } }),
+    content: fields.mdx({ label: 'Content' }),
+  },
+})
+```
+
+## Inline variant
+
+`fields.mdx.inline()` writes the MDX content inline with other YAML fields in the same file, rather than in a separate `.mdx` file:
+
+```typescript
+someContent: fields.mdx.inline({
+  label: 'Some content',
+})
+```
+
+The entry file will include the MDX text as a YAML block scalar:
+
+```yaml
+someContent: |
+  # Title
+
+  Some content
+```
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    posts: collection({
+      label: 'Posts',
+      slugField: 'title',
+      format: { contentField: 'content' },
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        content: fields.mdx({
+          label: 'Content',
+          options: {
+            heading: [1, 2, 3],
+            image: {
+              directory: 'public/images/posts',
+              publicPath: '/images/posts/',
+            },
+          },
+        }),
+      },
+    }),
+  },
+});
+```

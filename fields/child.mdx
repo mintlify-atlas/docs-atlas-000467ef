@@ -1,0 +1,127 @@
+---
+title: "fields.child()"
+description: "Embeds an editable rich-text region inside a component block preview."
+---
+
+The `child` field is only valid inside the `schema` of a component block defined within a [`fields.document()`](/fields/document) `componentBlocks` map. It marks a region of the component block's preview as directly editable in the document editor, rather than as a separate form field.
+
+Set `kind` to `'block'` for a block-level editable region (supports paragraphs and formatting) or `'inline'` for a single-line inline region.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript block and inline children
+document: fields.document({
+  label: 'Document',
+  formatting: true,
+  links: true,
+  componentBlocks: {
+    quote: component({
+      preview: () => null,
+      label: 'Quote',
+      schema: {
+        // Block child — supports paragraphs, inline marks, and soft breaks
+        content: fields.child({
+          kind: 'block',
+          placeholder: 'Quote...',
+          formatting: { inlineMarks: 'inherit', softBreaks: 'inherit' },
+          links: 'inherit',
+        }),
+        // Inline child — single line of text only
+        attribution: fields.child({
+          kind: 'inline',
+          placeholder: 'Attribution...',
+        }),
+      },
+    }),
+  },
+})
+```
+
+```typescript nested component blocks
+document: fields.document({
+  label: 'Document',
+  formatting: true,
+  componentBlocks: {
+    sectionContainer: component({
+      preview: ({ fields }) => (
+        <div style={{ padding: '1rem 0' }}>
+          {fields.content.element}
+        </div>
+      ),
+      label: 'Section container',
+      schema: {
+        // Set componentBlocks: 'inherit' to allow nesting blocks inside this child
+        content: fields.child({
+          kind: 'block',
+          componentBlocks: 'inherit',
+          placeholder: 'Add content here...',
+        }),
+      },
+    }),
+  },
+})
+```
+
+</CodeGroup>
+
+## Options
+
+<ParamField path="kind" type="'block' | 'inline'" required>
+  - `'block'` — a block-level editable region. Supports multi-paragraph content and block-level formatting.
+  - `'inline'` — a single-line region. Only inline marks are available.
+</ParamField>
+
+<ParamField path="placeholder" type="string">
+  Placeholder text shown in the editor when the region is empty.
+</ParamField>
+
+<ParamField path="formatting" type="object | 'inherit'">
+  Formatting options for the child region. Pass `'inherit'` to use the same formatting settings as the parent document, or provide a specific subset. Only applies to `kind: 'block'`.
+</ParamField>
+
+<ParamField path="links" type="boolean | 'inherit'">
+  Whether hyperlinks are allowed in this region. Pass `'inherit'` to mirror the parent document's `links` setting.
+</ParamField>
+
+<ParamField path="images" type="object | 'inherit'">
+  Whether inline images are allowed. Pass `'inherit'` to mirror the parent document's `images` setting. Only applies to `kind: 'block'`.
+</ParamField>
+
+<ParamField path="dividers" type="boolean | 'inherit'">
+  Whether horizontal dividers are allowed. Only applies to `kind: 'block'`.
+</ParamField>
+
+<ParamField path="tables" type="boolean | 'inherit'">
+  Whether tables are allowed. Only applies to `kind: 'block'`.
+</ParamField>
+
+<ParamField path="componentBlocks" type="'inherit'">
+  Pass `'inherit'` to allow editors to nest component blocks inside this child region. Only applies to `kind: 'block'`.
+</ParamField>
+
+<Note>
+  `fields.child()` is only meaningful inside a `component()` block's `schema`. Using it at the top level of a collection or singleton schema has no effect.
+</Note>
+
+## Reader API
+
+The `child` field is part of the document's JSON structure and is not directly accessible via a separate Reader API key. The full document (including component block content) is returned by `fields.document()` as a `DocumentElement[]` array, rendered via `DocumentRenderer`.
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="fields.document()" href="/fields/document">
+    The parent field that hosts component blocks and child fields.
+  </Card>
+  <Card title="Content components" href="/concepts/content-components">
+    Learn how to define and preview component blocks.
+  </Card>
+</CardGroup>

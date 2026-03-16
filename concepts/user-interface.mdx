@@ -1,0 +1,144 @@
+---
+title: "User interface"
+description: "Customize the Keystatic Admin UI with your own brand name, logo, and sidebar navigation."
+---
+
+The `ui` option in the top-level `config()` lets you customize parts of the Keystatic Admin UI. Tailoring the interface to match your brand helps content editors feel at home from day one.
+
+---
+
+## Brand
+
+By default, Keystatic displays a generic brand name based on the storage mode. Override it with a `ui.brand` object.
+
+### Name only
+
+```typescript keystatic.config.ts
+import { config } from '@keystatic/core'
+
+export default config({
+  // ...
+  ui: {
+    brand: { name: 'Acme Corp' },
+  },
+})
+```
+
+### Name and logo
+
+Add a `mark` property to render a custom logo. The mark receives a `colorScheme` prop (`'light'` or `'dark'`) so you can adapt the asset to the user's color preference.
+
+<Note>
+  Use a maximum height of `24px` so the logo fits comfortably in the header bar.
+</Note>
+
+```tsx keystatic.config.tsx
+import { config } from '@keystatic/core'
+
+export default config({
+  // ...
+  ui: {
+    brand: {
+      name: 'Acme Corp',
+      mark: ({ colorScheme }) => {
+        const src = colorScheme === 'dark'
+          ? '/logo-dark.png'
+          : '/logo-light.png';
+        return <img src={src} height={24} alt="Acme Corp" />;
+      },
+    },
+  },
+})
+```
+
+When using an inline SVG, use `"currentColor"` for `fill` and `stroke` values so the icon inherits the correct foreground color in both light and dark mode.
+
+---
+
+## Navigation
+
+By default, Keystatic groups the sidebar into two sections: **Collections** and **Singletons**. Use `ui.navigation` to define a custom order or grouping.
+
+### Flat list
+
+Pass an array of collection/singleton keys to display them as a single ungrouped list:
+
+```typescript keystatic.config.ts
+import { config } from '@keystatic/core'
+
+export default config({
+  // ...
+  ui: {
+    navigation: ['pages', 'posts', 'site', 'seo'],
+  },
+})
+```
+
+Insert a `'---'` string to add a visual divider between items:
+
+```typescript
+ui: {
+  navigation: [
+    'pages',
+    'posts',
+    '---',
+    'site',
+    'seo',
+  ],
+},
+```
+
+### Named groups
+
+Pass an object where each key becomes a section heading and each value is an array of keys:
+
+```typescript keystatic.config.ts
+import { config } from '@keystatic/core'
+
+export default config({
+  // ...
+  ui: {
+    navigation: {
+      Content: ['pages', 'posts'],
+      Settings: ['site', 'seo'],
+    },
+  },
+})
+```
+
+<Note>
+  The **Dashboard** item always appears first in the navigation, regardless of the order you specify.
+</Note>
+
+---
+
+## Options reference
+
+<ParamField path="ui.brand" type="object">
+  Customizes the brand displayed in the Admin UI header.
+</ParamField>
+
+<ParamField path="ui.brand.name" type="string" required>
+  The brand name shown as the app title.
+</ParamField>
+
+<ParamField path="ui.brand.mark" type="React component">
+  A React component that renders a logo or icon. Receives `{ colorScheme: 'light' | 'dark' }` as props.
+</ParamField>
+
+<ParamField path="ui.navigation" type="string[] | object">
+  Overrides the default two-section sidebar. Pass an array for a flat list, or an object with string keys for named groups. Use `'---'` as a divider between items.
+</ParamField>
+
+## Type signature
+
+See the latest `UserInterface` type signature at [docsmill.dev](https://docsmill.dev/npm/@keystatic/core@latest#/.UserInterface).
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/concepts/configuration">
+    Full reference for the top-level config options.
+  </Card>
+  <Card title="Collections" icon="layer-group" href="/concepts/collections">
+    Define the collections that appear in the sidebar.
+  </Card>
+</CardGroup>

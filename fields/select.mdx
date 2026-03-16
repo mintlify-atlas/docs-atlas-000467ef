@@ -1,0 +1,104 @@
+---
+title: "fields.select()"
+description: "Stores a single value chosen from a predefined list of options."
+---
+
+The `select` field renders a dropdown in the Admin UI, letting editors pick exactly one value from a fixed list. It requires both an `options` array and a `defaultValue` that matches one of those options.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript basic
+role: fields.select({
+  label: 'Role',
+  options: [
+    { label: 'Designer', value: 'designer' },
+    { label: 'Developer', value: 'developer' },
+    { label: 'Product manager', value: 'product-manager' },
+  ],
+  defaultValue: 'designer',
+})
+```
+
+```typescript with description
+status: fields.select({
+  label: 'Status',
+  description: 'The current publication status of this entry.',
+  options: [
+    { label: 'Draft', value: 'draft' },
+    { label: 'In review', value: 'in-review' },
+    { label: 'Published', value: 'published' },
+  ],
+  defaultValue: 'draft',
+})
+```
+
+</CodeGroup>
+
+## Options
+
+<ParamField path="label" type="string" required>
+  The label shown above the field in the Admin UI.
+</ParamField>
+
+<ParamField path="options" type="{ label: string; value: string }[]" required>
+  The list of choices available in the dropdown. Each entry must have a human-readable `label` and a string `value` that is stored in the data file.
+</ParamField>
+
+<ParamField path="defaultValue" type="string" required>
+  The value selected when creating a new entry. Must exactly match the `value` of one of the provided `options`. Keystatic throws at startup if this constraint is not met.
+</ParamField>
+
+<ParamField path="description" type="string">
+  Helper text shown below the label in the Admin UI.
+</ParamField>
+
+## Reader API
+
+The `select` field returns `string` in the Reader API — specifically the `value` of whichever option was selected.
+
+```typescript
+const post = await reader.collections.posts.read('my-post');
+const status: string = post.status;
+// e.g. 'draft' | 'in-review' | 'published'
+```
+
+<Note>
+  The return type is `string`, not the full union of option values. TypeScript cannot infer the union at runtime unless you cast it explicitly.
+</Note>
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    posts: collection({
+      label: 'Posts',
+      slugField: 'title',
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        status: fields.select({
+          label: 'Status',
+          description: 'The current publication status of this entry.',
+          options: [
+            { label: 'Draft', value: 'draft' },
+            { label: 'In review', value: 'in-review' },
+            { label: 'Published', value: 'published' },
+          ],
+          defaultValue: 'draft',
+        }),
+      },
+    }),
+  },
+});
+```

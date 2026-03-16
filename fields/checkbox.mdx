@@ -1,0 +1,81 @@
+---
+title: "fields.checkbox()"
+description: "Stores a boolean value as a single checkbox in the Admin UI."
+---
+
+The `checkbox` field stores a `boolean`. It renders a single checkbox in the Admin UI and is useful for simple on/off toggles such as draft status, feature flags, or visibility controls.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript basic
+draft: fields.checkbox({
+  label: 'Draft',
+})
+```
+
+```typescript with description and default
+featured: fields.checkbox({
+  label: 'Featured',
+  description: 'Show this post in the featured section on the homepage.',
+  defaultValue: false,
+})
+```
+
+</CodeGroup>
+
+## Options
+
+<ParamField path="label" type="string" required>
+  The label shown next to the checkbox in the Admin UI.
+</ParamField>
+
+<ParamField path="description" type="string">
+  Helper text shown below the label in the Admin UI.
+</ParamField>
+
+<ParamField path="defaultValue" type="boolean">
+  The initial state of the checkbox when creating a new entry.
+
+  Defaults to `false`.
+</ParamField>
+
+## Reader API
+
+The `checkbox` field returns `boolean` in the Reader API.
+
+```typescript
+const post = await reader.collections.posts.read('my-post');
+const isDraft: boolean = post.draft;
+```
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    posts: collection({
+      label: 'Posts',
+      slugField: 'title',
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        draft: fields.checkbox({
+          label: 'Draft',
+          description: 'Set this post as a draft to prevent it from being published.',
+          defaultValue: true,
+        }),
+      },
+    }),
+  },
+});
+```

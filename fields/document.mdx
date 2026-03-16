@@ -1,0 +1,228 @@
+---
+title: "fields.document()"
+description: "Stores rich text as a JSON document using a customisable WYSIWYG editor."
+---
+
+<Warning>
+  `fields.document()` is superseded by [`fields.markdoc()`](/fields/markdoc) and [`fields.mdx()`](/fields/mdx). Both newer fields use file-based formats (Markdoc and MDX respectively), which are easier to read, version-control, and render. New projects should use `fields.markdoc()` or `fields.mdx()` instead. `fields.document()` continues to work but will not receive new features.
+</Warning>
+
+The `document` field is a rich text editor that stores its content as a JSON structure. It is highly customisable: you can enable or disable formatting options and add custom component blocks with their own schemas.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript basic
+document: fields.document({
+  label: 'Document',
+  formatting: true,
+  links: true,
+})
+```
+
+```typescript with all options
+content: fields.document({
+  label: 'Content',
+  links: true,
+  dividers: true,
+  tables: true,
+  layouts: [[1], [1, 1]],
+  images: {
+    directory: 'src/content/blog/_images',
+    publicPath: '/src/content/blog/_images/',
+    schema: {
+      title: fields.text({
+        label: 'Caption',
+        description: 'The text to display under the image.',
+      }),
+    },
+  },
+  formatting: {
+    alignment: true,
+    blockTypes: true,
+    headingLevels: true,
+    inlineMarks: {
+      bold: true,
+      italic: true,
+      code: true,
+      underline: true,
+      strikethrough: true,
+    },
+    listTypes: true,
+    softBreaks: true,
+  },
+})
+```
+
+</CodeGroup>
+
+## Options
+
+<ParamField path="label" type="string" required>
+  The label shown above the field in the Admin UI.
+</ParamField>
+
+<ParamField path="description" type="string">
+  Helper text shown below the label in the Admin UI.
+</ParamField>
+
+<ParamField path="formatting" type="boolean | FormattingOptions">
+  Enables text formatting in the toolbar. Pass `true` to enable all standard Markdown-compatible formatting options, or pass an object to enable a specific subset.
+
+  The shorthand `formatting: true` enables:
+
+  ```typescript
+  {
+    inlineMarks: { bold: true, italic: true, strikethrough: true, code: true },
+    listTypes: { ordered: true, unordered: true },
+    headingLevels: [1, 2, 3, 4, 5, 6],
+    blockTypes: { blockquote: true, code: true },
+    softBreaks: true,
+  }
+  ```
+
+  Additional formatting options (not included in the shorthand):
+
+  ```typescript
+  {
+    formatting: {
+      alignment: { center: true, end: true },
+      inlineMarks: {
+        keyboard: true,
+        subscript: true,
+        superscript: true,
+        underline: true,
+      },
+    },
+  }
+  ```
+</ParamField>
+
+<ParamField path="links" type="boolean">
+  Enable hyperlinks in the editor.
+</ParamField>
+
+<ParamField path="dividers" type="boolean">
+  Enable horizontal dividers.
+</ParamField>
+
+<ParamField path="tables" type="boolean">
+  Enable tables.
+</ParamField>
+
+<ParamField path="layouts" type="number[][]">
+  Enable multi-column layout blocks. Each inner array defines the relative widths of the columns. For example, `[[1], [1, 1]]` allows single-column and two-column equal-width layouts.
+</ParamField>
+
+<ParamField path="images" type="boolean | ImageOptions">
+  Enable inline images. Pass `true` for defaults, or an object to configure storage.
+
+  <ParamField path="images.directory" type="string">
+    The directory where uploaded images are stored.
+  </ParamField>
+
+  <ParamField path="images.publicPath" type="string">
+    The URL prefix used when reading image paths.
+  </ParamField>
+
+  <ParamField path="images.schema" type="object">
+    Additional fields attached to each image. For example, a `title` field for captions.
+  </ParamField>
+</ParamField>
+
+<ParamField path="componentBlocks" type="Record<string, ComponentBlock>">
+  Custom component blocks that can be embedded in the document. Each component block defines its own `schema`, a `label`, and an optional `preview` React component. See the source docs for `component()` for full details.
+</ParamField>
+
+<ParamField path="relationships" type="Record<string, Relationship>">
+  Define entry relationships that can be embedded in the document.
+</ParamField>
+
+## Component blocks
+
+Component blocks let you embed custom UI components with configurable fields inside the document editor:
+
+```typescript
+import { component, fields } from '@keystatic/core';
+
+document: fields.document({
+  label: 'Document',
+  formatting: true,
+  componentBlocks: {
+    quote: component({
+      preview: () => null,
+      label: 'Quote',
+      schema: {
+        content: fields.child({
+          kind: 'block',
+          placeholder: 'Quote...',
+          formatting: { inlineMarks: 'inherit', softBreaks: 'inherit' },
+          links: 'inherit',
+        }),
+        attribution: fields.child({
+          kind: 'inline',
+          placeholder: 'Attribution...',
+        }),
+      },
+    }),
+  },
+})
+```
+
+## Reader API
+
+The `document` field returns a `DocumentElement[]` array from the Reader API. Use the `DocumentRenderer` from `@keystatic/core/renderer` to render it:
+
+```tsx
+import { createReader } from '@keystatic/core/reader';
+import { DocumentRenderer } from '@keystatic/core/renderer';
+import keystaticConfig from './keystatic.config';
+
+const reader = createReader(process.cwd(), keystaticConfig);
+
+export default async function PostPage({ params }) {
+  const post = await reader.collections.posts.read(params.slug);
+  return <DocumentRenderer document={post.content} />;
+}
+```
+
+<Note>
+  The Reader API returns the JSON document synchronously (not as an async function), unlike `fields.markdoc()` and `fields.mdx()` which return content via a separate file parse.
+</Note>
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    posts: collection({
+      label: 'Posts',
+      slugField: 'title',
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        content: fields.document({
+          label: 'Content',
+          formatting: true,
+          links: true,
+          images: {
+            directory: 'public/images/posts',
+            publicPath: '/images/posts/',
+          },
+          tables: true,
+          dividers: true,
+        }),
+      },
+    }),
+  },
+});
+```

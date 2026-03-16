@@ -1,0 +1,146 @@
+---
+title: "Local mode"
+description: "Store and edit content directly on your local filesystem — the default storage mode for new Keystatic projects."
+---
+
+Local mode is the default storage mode for Keystatic. Content is read from and written to your local filesystem directly, with no GitHub integration required.
+
+All new projects created with the [Keystatic CLI](/quick-start) start in local mode.
+
+## Configuration
+
+Set `storage.kind` to `'local'` in your `keystatic.config.ts`:
+
+```typescript keystatic.config.ts
+import { config } from '@keystatic/core';
+
+export default config({
+  storage: {
+    kind: 'local',
+  },
+  // ...collections and singletons
+});
+```
+
+No environment variables or external services are needed. The Admin UI at `/keystatic` is accessible without logging in.
+
+## When to use local mode
+
+Local mode is a good fit for:
+
+- **Development** — iterate on your content schema and UI without any external dependencies.
+- **Single-developer projects** — when you're the only person editing content and you have direct access to the filesystem.
+- **Prototypes** — get a working Keystatic setup running in minutes.
+
+## Route handler setup
+
+Even in local mode, Keystatic requires an API route to serve the Admin UI. The setup depends on your framework.
+
+<Tabs>
+  <Tab title="Next.js (App Router)">
+    ```typescript src/app/api/keystatic/[...params]/route.ts
+    import { makeRouteHandler } from '@keystatic/next/route-handler';
+    import config from '../../../../../keystatic.config';
+
+    export const { GET, POST } = makeRouteHandler({ config });
+    ```
+
+    You also need an Admin UI page:
+
+    ```typescript src/app/keystatic/keystatic.ts
+    "use client";
+
+    import { makePage } from '@keystatic/next/ui/app';
+    import config from '../../../keystatic.config';
+
+    export default makePage(config);
+    ```
+
+    ```tsx src/app/keystatic/layout.tsx
+    import KeystaticApp from './keystatic';
+
+    export default function Layout() {
+      return <KeystaticApp />;
+    }
+    ```
+
+    ```tsx src/app/keystatic/[[...params]]/page.tsx
+    export default function Page() {
+      return null;
+    }
+    ```
+  </Tab>
+  <Tab title="Next.js (Pages Router)">
+    ```typescript pages/api/keystatic/[...params].ts
+    import { makeAPIRouteHandler } from '@keystatic/next/api';
+    import config from '../../../keystatic.config';
+
+    export default makeAPIRouteHandler({ config });
+    ```
+
+    ```tsx pages/keystatic/[[...params]].tsx
+    import { makePage } from '@keystatic/next/ui/pages';
+    import config from '../../keystatic.config';
+
+    export default makePage(config);
+    ```
+  </Tab>
+  <Tab title="Astro">
+    With the `@keystatic/astro` integration, the API route and Admin UI are injected automatically. Add the integration to your Astro config:
+
+    ```javascript astro.config.mjs
+    import { defineConfig } from 'astro/config';
+    import react from '@astrojs/react';
+    import markdoc from '@astrojs/markdoc';
+    import keystatic from '@keystatic/astro';
+
+    export default defineConfig({
+      integrations: [react(), markdoc(), keystatic()],
+    });
+    ```
+
+    No manual route files are required.
+  </Tab>
+  <Tab title="Remix">
+    ```typescript app/routes/api.keystatic.$.tsx
+    import type { ActionFunction, LoaderFunction } from '@remix-run/node';
+    import { handleLoader } from '@keystatic/remix/api';
+    import config from '../../keystatic.config';
+
+    export const loader: LoaderFunction = args => handleLoader({ config }, args);
+    export const action: ActionFunction = args => handleLoader({ config }, args);
+    ```
+
+    ```typescript app/routes/keystatic.$.tsx
+    import { makePage } from '@keystatic/remix/ui';
+    import config from '../../keystatic.config';
+
+    export default makePage(config);
+    ```
+  </Tab>
+</Tabs>
+
+For full framework setup instructions, see the [Astro](/installation/astro), [Next.js](/installation/next-js), and [Remix](/installation/remix) integration guides.
+
+## Limitations
+
+<Warning>
+  Local mode does not support GitHub integration or team collaboration. It is not suitable for deployed sites where multiple editors need to make changes through a browser.
+</Warning>
+
+- No GitHub OAuth — there is no login flow and no branch management.
+- No pull request workflow — changes are written directly to the filesystem.
+- Only accessible on machines with direct filesystem access to the project.
+
+## Next steps
+
+When you're ready to enable team editing on a deployed site, switch to GitHub mode or Keystatic Cloud.
+
+<CardGroup cols={2}>
+  <Card title="GitHub mode" icon="github" href="/storage/github-mode">
+    Connect to a GitHub repository for branch-based editing and pull request workflows.
+  </Card>
+  <Card title="Keystatic Cloud" icon="cloud" href="/cloud">
+    Managed GitHub authentication and image hosting — no custom OAuth app required.
+  </Card>
+</CardGroup>

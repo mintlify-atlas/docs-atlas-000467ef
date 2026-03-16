@@ -1,0 +1,97 @@
+---
+title: "Disable Admin UI in production (Next.js)"
+description: "Prevent the Keystatic Admin UI and its API routes from being accessible in a production Next.js deployment."
+---
+
+<Note>
+  This is a community contribution from [Funabab](https://github.com/funabab).
+</Note>
+
+With the default Next.js setup, the `/keystatic` routes are accessible in production. When using the `local` storage strategy you typically want to restrict the Admin UI to your development environment only.
+
+The approach below exports a `showAdminUI` flag from your Keystatic config and uses it to return a 404 response in both the page route and the API route when running in production.
+
+<Steps>
+  <Step title="Export a showAdminUI flag from the Keystatic config">
+    Open `keystatic.config.ts` and export a constant that evaluates `NODE_ENV`.
+
+    ```typescript keystatic.config.ts
+    import { config, collection, fields } from '@keystatic/core';
+
+    export const showAdminUI = process.env.NODE_ENV === 'development';
+
+    export default config({
+      storage: {
+        kind: 'local',
+      },
+      collections: {
+        posts: collection({
+          label: 'Posts',
+          slugField: 'title',
+          path: 'posts/*',
+          format: { contentField: 'content' },
+          schema: {
+            title: fields.slug({ name: { label: 'Title' } }),
+            content: fields.markdoc({
+              label: 'Content',
+            }),
+          },
+        }),
+      },
+    });
+    ```
+
+    `NODE_ENV` is automatically set to `"production"` by hosts like Vercel and Netlify during a production deployment. Consult your host's documentation to confirm this.
+  </Step>
+
+  <Step title="Guard the Admin UI layout">
+    Open `app/keystatic/layout.tsx` and call `notFound()` when `showAdminUI` is `false`.
+
+    ```tsx app/keystatic/layout.tsx
+    import KeystaticApp from './keystatic';
+    import { showAdminUI } from '../../keystatic.config';
+    import { notFound } from 'next/navigation';
+
+    export default function RootLayout() {
+      if (showAdminUI === false) {
+        notFound();
+      }
+      return <KeystaticApp />;
+    }
+    ```
+
+    In production, any request to `/keystatic` will now return a 404 response.
+  </Step>
+
+  <Step title="Guard the API routes (optional)">
+    The Admin UI also relies on API routes at `api/keystatic/[...params]/route.ts`. Guarding these routes prevents any API calls from succeeding even if someone discovers them.
+
+    ```typescript api/keystatic/[...params]/route.ts
+    import { makeRouteHandler } from '@keystatic/next/route-handler';
+    import keystaticConfig, { showAdminUI } from '../../../../keystatic.config';
+
+    export const { POST, GET } = (() => {
+      const notFoundRouteHandler = () =>
+        new Response(null, { status: 404 });
+
+      if (showAdminUI === false) {
+        return { GET: notFoundRouteHandler, POST: notFoundRouteHandler };
+      }
+
+      return makeRouteHandler({
+        config: keystaticConfig,
+      });
+    })();
+    ```
+
+    <Tip>
+      Guarding the API routes is optional if you are only concerned about UI access. The layout guard in the previous step is enough to prevent editors from reaching the Admin UI.
+    </Tip>
+  </Step>
+
+  <Step title="Deploy to production">
+    Deploy your project. Make sure `NODE_ENV` is set to a value other than `"development"` in your production environment — this is handled automatically by Vercel and Netlify.
+
+    After deploying, any request to `/keystatic` or the Keystatic API routes will return a 404 response.
+  </Step>
+</Steps>

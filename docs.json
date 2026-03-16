@@ -1,122 +1,147 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Keystatic",
+  "theme": "palm",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#8c8b86",
+    "light": "#282826",
+    "dark": "#60615e"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "https://media.brand.dev/d30b8e55-6285-472f-8e89-9c268dbb4dfb.png",
+  "logo": {
+    "light": "https://media.brand.dev/2528919c-ffe9-4915-bd69-80e82ae547df.svg",
+    "dark": "https://media.brand.dev/2528919c-ffe9-4915-bd69-80e82ae547df.svg"
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/thinkmill/keystatic"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/thinkmill/keystatic"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Getting Started",
             "pages": [
-              "index",
-              "quickstart",
-              "development"
+              "introduction",
+              "quick-start",
+              "cloud"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Integration Guides",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "installation/astro",
+              "installation/next-js",
+              "installation/remix"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Core Concepts",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "concepts/configuration",
+              "concepts/collections",
+              "concepts/singletons",
+              "concepts/content-organisation",
+              "concepts/path-wildcard",
+              "concepts/format-options",
+              "concepts/entry-layout",
+              "concepts/user-interface",
+              "concepts/content-components"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Storage Modes",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "storage/local-mode",
+              "storage/github-mode"
+            ]
+          },
+          {
+            "group": "Reader API",
+            "pages": [
+              "reader/overview"
+            ]
+          },
+          {
+            "group": "Recipes",
+            "pages": [
+              "recipes/real-time-previews",
+              "recipes/astro-images",
+              "recipes/astro-disable-admin-ui-in-production",
+              "recipes/nextjs-disable-admin-ui-in-production"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Fields API",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Overview",
             "pages": [
-              "api-reference/introduction"
+              "fields/overview"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Text & Numbers",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "fields/text",
+              "fields/integer",
+              "fields/number",
+              "fields/url",
+              "fields/slug",
+              "fields/date",
+              "fields/datetime"
+            ]
+          },
+          {
+            "group": "Rich Content",
+            "pages": [
+              "fields/markdoc",
+              "fields/mdx",
+              "fields/document"
+            ]
+          },
+          {
+            "group": "Media & Files",
+            "pages": [
+              "fields/image",
+              "fields/cloud-image",
+              "fields/file"
+            ]
+          },
+          {
+            "group": "Selection",
+            "pages": [
+              "fields/select",
+              "fields/multiselect",
+              "fields/checkbox",
+              "fields/conditional"
+            ]
+          },
+          {
+            "group": "Structure",
+            "pages": [
+              "fields/object",
+              "fields/array",
+              "fields/blocks",
+              "fields/relationship",
+              "fields/path-reference",
+              "fields/child",
+              "fields/ignored"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

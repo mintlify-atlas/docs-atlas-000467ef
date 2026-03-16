@@ -1,97 +1,120 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Keystatic"
+description: "First-class CMS experience, TypeScript API, Markdown & YAML/JSON based, no DB."
 ---
 
-## Setting up
+<img
+  src="https://media.brand.dev/2528919c-ffe9-4915-bd69-80e82ae547df.svg"
+  alt="Keystatic"
+  style={{ height: "48px", marginBottom: "24px" }}
+/>
 
-Get your documentation site up and running in minutes.
+# Content management that lives in your codebase
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+Keystatic is a TypeScript-first CMS that stores your content as Markdown, YAML, or JSON files — directly in your Git repository. No database, no external service lock-in, and a beautiful Admin UI that your whole team can use.
 
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={3}>
+  <Card title="Quick start" icon="rocket" href="/quick-start">
+    Get Keystatic running in a new project in under 5 minutes.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Add to existing project" icon="puzzle-piece" href="/introduction">
+    Integrate Keystatic into your Next.js, Astro, or Remix project.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Keystatic Cloud" icon="cloud" href="/cloud">
+    Add GitHub auth and image hosting with Keystatic Cloud.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Why Keystatic?
 
-Everything you need to create world-class documentation.
+<CardGroup cols={2}>
+  <Card title="Git-native storage" icon="code-branch">
+    Content lives as Markdown, YAML, or JSON files in your repository. Every change is a Git commit — reviewable, diffable, and version-controlled.
+  </Card>
+  <Card title="TypeScript-first API" icon="shield-check">
+    Define your content schema in TypeScript. Get full type safety when reading content, with autocomplete for every field.
+  </Card>
+  <Card title="Visual editing UI" icon="pen-to-square">
+    A polished Admin UI lets editors manage content without touching code. Works locally and connects to GitHub for team collaboration.
+  </Card>
+  <Card title="Framework agnostic" icon="layer-group">
+    First-class integrations for Next.js, Astro, and Remix. The Reader API works anywhere Node.js runs.
+  </Card>
+</CardGroup>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+## Choose your path
 
-## Need inspiration?
+<Tabs>
+  <Tab title="New project">
+    Start fresh with the `create-keystatic` CLI. It scaffolds a complete project with your choice of framework.
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+    ```bash
+    npm create keystatic@latest
+    ```
+
+    Then follow the [Quick start guide](/quick-start) to explore the Admin UI and understand how Keystatic works.
+  </Tab>
+  <Tab title="Existing project">
+    Add Keystatic to an existing codebase with your framework's integration guide:
+
+    - [Next.js integration](/installation/next-js)
+    - [Astro integration](/installation/astro)
+    - [Remix integration](/installation/remix)
+  </Tab>
+</Tabs>
+
+## How it works
+
+<Steps>
+  <Step title="Define your content schema">
+    Create a `keystatic.config.ts` file and define collections and singletons using Keystatic's TypeScript API:
+
+    ```typescript keystatic.config.ts
+    import { config, collection, fields } from '@keystatic/core';
+
+    export default config({
+      storage: { kind: 'local' },
+      collections: {
+        posts: collection({
+          label: 'Posts',
+          slugField: 'title',
+          path: 'src/content/posts/*',
+          format: { contentField: 'content' },
+          schema: {
+            title: fields.slug({ name: { label: 'Title' } }),
+            content: fields.markdoc({ label: 'Content' }),
+          },
+        }),
+      },
+    });
+    ```
+  </Step>
+  <Step title="Edit content in the Admin UI">
+    Run `npm run dev` and visit `/keystatic` to open the Admin UI. Create and edit entries with a rich visual editor — all changes save as files in your project.
+  </Step>
+  <Step title="Read content in your app">
+    Use the Reader API to fetch content at build time or in server components:
+
+    ```typescript
+    import { createReader } from '@keystatic/core/reader';
+    import keystaticConfig from '../keystatic.config';
+
+    const reader = createReader(process.cwd(), keystaticConfig);
+    const posts = await reader.collections.posts.all();
+    ```
+  </Step>
+</Steps>
+
+## Storage modes
+
+<CardGroup cols={3}>
+  <Card title="Local" icon="hard-drive" href="/storage/local-mode">
+    Files are read and written directly on your local filesystem. Perfect for development and single-developer projects.
+  </Card>
+  <Card title="GitHub" icon="github" href="/storage/github-mode">
+    Connect to a GitHub repository. Changes create branches and pull requests — ideal for team workflows.
+  </Card>
+  <Card title="Keystatic Cloud" icon="cloud" href="/cloud">
+    Add managed GitHub auth and image hosting on top of GitHub mode. No extra infrastructure required.
+  </Card>
+</CardGroup>

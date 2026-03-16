@@ -1,0 +1,100 @@
+---
+title: "Fields API overview"
+description: "Fields define the shape of your content. Use them inside the schema of collections and singletons."
+---
+
+Fields define what data each collection entry or singleton stores. You compose them inside the `schema` option of a `collection()` or `singleton()` call.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+All field helpers are exported from the `fields` object. There is no need to import individual field functions.
+
+## Usage
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    posts: collection({
+      label: 'Posts',
+      slugField: 'title',
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        publishedOn: fields.date({ label: 'Published on' }),
+        summary: fields.text({ label: 'Summary', multiline: true }),
+        featured: fields.checkbox({ label: 'Featured' }),
+      },
+    }),
+  },
+});
+```
+
+## Field categories
+
+<CardGroup cols={2}>
+  <Card title="Text & Numbers" icon="text-size" href="/fields/text">
+    `text`, `integer`, `number`, `url`, `slug`, `date`, `datetime`
+  </Card>
+  <Card title="Rich Content" icon="file-text" href="/fields/markdoc">
+    `markdoc`, `mdx`, `document`
+  </Card>
+  <Card title="Media & Files" icon="image" href="/fields/image">
+    `image`, `cloudImage`, `file`
+  </Card>
+  <Card title="Selection" icon="list-checks" href="/fields/select">
+    `select`, `multiselect`, `checkbox`, `conditional`
+  </Card>
+  <Card title="Structure" icon="layers" href="/fields/object">
+    `object`, `array`, `blocks`, `relationship`, `pathReference`, `child`, `ignored`
+  </Card>
+</CardGroup>
+
+## Text & Numbers
+
+<CardGroup cols={2}>
+  <Card title="fields.text()" icon="type" href="/fields/text">
+    A single-line or multi-line text string.
+  </Card>
+  <Card title="fields.integer()" icon="hash" href="/fields/integer">
+    A whole number (no decimals).
+  </Card>
+  <Card title="fields.number()" icon="calculator" href="/fields/number">
+    A decimal number with optional step size.
+  </Card>
+  <Card title="fields.url()" icon="link" href="/fields/url">
+    A validated, sanitised URL string.
+  </Card>
+  <Card title="fields.slug()" icon="at-sign" href="/fields/slug">
+    A human-readable name paired with an auto-generated URL slug.
+  </Card>
+  <Card title="fields.date()" icon="calendar" href="/fields/date">
+    A date stored as a `YYYY-MM-DD` string.
+  </Card>
+  <Card title="fields.datetime()" icon="clock" href="/fields/datetime">
+    A datetime stored as a `YYYY-MM-DDTHH:MM` string.
+  </Card>
+</CardGroup>
+
+## Reader API types
+
+Each field produces a typed value when read with the Reader API. The table below summarises the return types for the fields covered on this tab.
+
+| Field | Reader type |
+|---|---|
+| `text` | `string` |
+| `integer` | `number \| null` |
+| `number` | `number \| null` |
+| `url` | `string \| null` |
+| `slug` | `string` (the slug portion only) |
+| `date` | `string \| null` (`YYYY-MM-DD`) |
+| `datetime` | `string \| null` (`YYYY-MM-DDTHH:MM`) |
+
+<Note>
+  Fields marked with `validation.isRequired: true` narrow their Reader API type to exclude `null`.
+</Note>

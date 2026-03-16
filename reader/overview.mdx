@@ -1,0 +1,298 @@
+---
+title: "Reader API"
+description: "A server-only Node.js API for reading Keystatic content at build time or in server-rendered pages."
+---
+
+The Reader API lets you read Keystatic content from your application code. Use it to fetch collections and singletons at build time, in server components, or in server-side data-loading functions.
+
+<Warning>
+  The Reader API is server-only. It uses Node.js APIs and must not be imported or called in browser code.
+</Warning>
+
+## Creating a reader
+
+### Local filesystem
+
+To read from the local filesystem, import `createReader` along with your Keystatic config:
+
+```typescript
+import { createReader } from '@keystatic/core/reader';
+import keystaticConfig from '../keystatic.config';
+
+const reader = createReader(process.cwd(), keystaticConfig);
+```
+
+`createReader` takes two arguments:
+
+1. The root directory of your repository (typically `process.cwd()`)
+2. Your Keystatic config object
+
+### GitHub repository
+
+To read content directly from a GitHub repository without a local checkout, import `createGitHubReader` from `@keystatic/core/reader/github`:
+
+```typescript
+import { createGitHubReader } from '@keystatic/core/reader/github';
+import keystaticConfig from '../keystatic.config';
+
+const reader = createGitHubReader(keystaticConfig, {
+  repo: 'your-org/your-repo',
+  token: process.env.GITHUB_PAT,
+});
+```
+
+`createGitHubReader` takes two arguments:
+
+1. Your Keystatic config object
+2. An options object:
+   - `repo` — the GitHub repository in `'owner/name'` format
+   - `token` — a GitHub Personal Access Token with read access to the repository (see [GitHub's documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) for how to generate one)
+   - `ref` — optional git ref to read from (defaults to `HEAD`)
+
+<Note>
+  The `token` here is a Personal Access Token for reading repository contents — it is separate from the `KEYSTATIC_GITHUB_CLIENT_ID` and `KEYSTATIC_GITHUB_CLIENT_SECRET` used for the Admin UI authentication.
+</Note>
+
+## Reading collections
+
+### List slugs
+
+Get an array of slugs for all entries in a collection:
+
+```typescript
+const slugs = await reader.collections.posts.list();
+// ['hello-world', 'second-post', ...]
+```
+
+### Read a single entry
+
+Get the data for one entry by slug:
+
+```typescript
+const post = await reader.collections.posts.read('hello-world');
+// post.title, post.content, ...
+```
+
+Returns `null` if no entry with that slug exists.
+
+### Read all entries
+
+Get an array of objects containing both the slug and entry data:
+
+```typescript
+const posts = await reader.collections.posts.all();
+// [{ slug: 'hello-world', entry: { title: '...', ... } }, ...]
+```
+
+## Reading singletons
+
+Get the data for a singleton:
+
+```typescript
+const navigation = await reader.singletons.navigation.read();
+```
+
+Returns `null` if the singleton file does not exist yet.
+
+## Data from linked files
+
+If your schema includes a `document` field (or any other field backed by a separate file), that field is returned as an async function by default. Call it to get the data:
+
+```typescript
+const post = await reader.collections.posts.read('hello-world');
+
+// `content` is a function — call it to resolve the document data
+const content = await post.content();
+```
+
+To resolve linked files immediately when reading the entry, pass `resolveLinkedFiles: true`:
+
+```typescript
+const post = await reader.collections.posts.read('hello-world', {
+  resolveLinkedFiles: true,
+});
+
+// `content` is now the resolved data directly, not a function
+const content = post.content;
+```
+
+The `all()` method also supports this option:
+
+```typescript
+const posts = await reader.collections.posts.all({
+  resolveLinkedFiles: true,
+});
+```
+
+## Using TypeScript
+
+The Reader API exports two TypeScript utility types.
+
+### `Entry<T>`
+
+Use `Entry` to type the data returned from a collection or singleton read:
+
+```typescript
+import { Entry } from '@keystatic/core/reader';
+import keystaticConfig from '../keystatic.config';
+
+type PostEntry = Entry<typeof keystaticConfig['collections']['posts']>;
+
+export function PostCard(props: PostEntry) {
+  return <h2>{props.title}</h2>;
+}
+```
+
+### `EntryWithResolvedLinkedFiles<T>`
+
+Use this variant when reading with `resolveLinkedFiles: true`. It reflects that linked file fields are resolved values rather than async functions:
+
+```typescript
+import { EntryWithResolvedLinkedFiles } from '@keystatic/core/reader';
+import keystaticConfig from '../keystatic.config';
+
+type PostWithContent = EntryWithResolvedLinkedFiles<
+  typeof keystaticConfig['collections']['posts']
+>;
+```
+
+## Framework usage
+
+<Tabs>
+  <Tab title="Next.js (Server Component)">
+    ```tsx src/app/posts/page.tsx
+    import { createReader } from '@keystatic/core/reader';
+    import keystaticConfig from '../../../keystatic.config';
+    import Link from 'next/link';
+
+    const reader = createReader(process.cwd(), keystaticConfig);
+
+    export default async function PostsPage() {
+      const posts = await reader.collections.posts.all();
+      return (
+        <ul>
+          {posts.map(post => (
+            <li key={post.slug}>
+              <Link href={`/posts/${post.slug}`}>{post.entry.title}</Link>
+            </li>
+          ))}
+        </ul>
+      );
+    }
+    ```
+  </Tab>
+  <Tab title="Next.js (getStaticProps)">
+    ```tsx pages/posts/index.tsx
+    import { createReader } from '@keystatic/core/reader';
+    import keystaticConfig from '../../keystatic.config';
+
+    const reader = createReader(process.cwd(), keystaticConfig);
+
+    export async function getStaticProps() {
+      const posts = await reader.collections.posts.all();
+      return { props: { posts } };
+    }
+
+    export default function PostsPage({
+      posts,
+    }: {
+      posts: { slug: string; entry: { title: string } }[];
+    }) {
+      return (
+        <ul>
+          {posts.map(post => (
+            <li key={post.slug}>{post.entry.title}</li>
+          ))}
+        </ul>
+      );
+    }
+    ```
+  </Tab>
+  <Tab title="Astro">
+    ```astro src/pages/posts/index.astro
+    ---
+    import { createReader } from '@keystatic/core/reader';
+    import keystaticConfig from '../../../keystatic.config';
+
+    const reader = createReader(process.cwd(), keystaticConfig);
+    const posts = await reader.collections.posts.all();
+    ---
+    <ul>
+      {posts.map(post => (
+        <li>
+          <a href={`/posts/${post.slug}`}>{post.entry.title}</a>
+        </li>
+      ))}
+    </ul>
+    ```
+  </Tab>
+  <Tab title="Remix">
+    ```tsx app/routes/posts._index.tsx
+    import { createReader } from '@keystatic/core/reader';
+    import { json } from '@remix-run/node';
+    import { useLoaderData, Link } from '@remix-run/react';
+    import keystaticConfig from '../../keystatic.config';
+
+    export async function loader() {
+      const reader = createReader(process.cwd(), keystaticConfig);
+      const posts = await reader.collections.posts.all();
+      return json({ posts });
+    }
+
+    export default function PostsPage() {
+      const { posts } = useLoaderData<typeof loader>();
+      return (
+        <ul>
+          {posts.map(post => (
+            <li key={post.slug}>
+              <Link to={`/posts/${post.slug}`}>{post.entry.title}</Link>
+            </li>
+          ))}
+        </ul>
+      );
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Rendering document fields
+
+The `document` field stores content as a structured JSON object. To render it as HTML, use `@keystatic/core/renderer` (or the `DocumentRenderer` component from `@keystatic/react`):
+
+```tsx
+import { DocumentRenderer } from '@keystatic/core/renderer';
+
+export default async function PostPage({ slug }: { slug: string }) {
+  const reader = createReader(process.cwd(), keystaticConfig);
+  const post = await reader.collections.posts.read(slug, {
+    resolveLinkedFiles: true,
+  });
+  if (!post) return null;
+
+  return (
+    <article>
+      <h1>{post.title}</h1>
+      <DocumentRenderer document={post.content} />
+    </article>
+  );
+}
+```
+
+`DocumentRenderer` accepts an optional `renderers` prop to customise how individual nodes and marks are rendered.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Local mode" icon="hard-drive" href="/storage/local-mode">
+    Read content from the local filesystem during development.
+  </Card>
+  <Card title="GitHub mode" icon="github" href="/storage/github-mode">
+    Read content directly from a GitHub repository.
+  </Card>
+  <Card title="Fields API" icon="list" href="/fields/overview">
+    Explore all available field types and the data shapes they produce.
+  </Card>
+  <Card title="Next.js integration" icon="rectangle-terminal" href="/installation/next-js">
+    Full setup guide including Server Component and Pages Router examples.
+  </Card>
+</CardGroup>

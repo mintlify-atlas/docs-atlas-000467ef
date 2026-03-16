@@ -1,0 +1,146 @@
+---
+title: "Keystatic Cloud"
+description: "Managed GitHub authentication and image hosting for Keystatic projects — no custom GitHub app required."
+---
+
+[Keystatic Cloud](https://keystatic.cloud) simplifies the process of connecting your Keystatic project to GitHub. Instead of creating and managing your own GitHub OAuth app, Keystatic Cloud handles authentication for you. It also provides opt-in image storage, optimisation, and delivery.
+
+## What Keystatic Cloud provides
+
+<CardGroup cols={2}>
+  <Card title="Managed GitHub auth" icon="github">
+    Connect to GitHub without creating a custom OAuth app. Team members can edit content without needing a GitHub account themselves.
+  </Card>
+  <Card title="Cloud Images" icon="image">
+    Upload, transform, and serve optimised images without storing them in your Git repository. Available as a Pro feature.
+  </Card>
+  <Card title="Teams and projects" icon="users">
+    Organise projects into teams. Control access at the team level — every member of a team can access all projects in that team.
+  </Card>
+  <Card title="Multi-player editing" icon="pen-to-square">
+    Collaborate with other editors in real-time on the same document. Available as an experimental Pro feature.
+  </Card>
+</CardGroup>
+
+## Plans
+
+Creating a Keystatic Cloud account is free. You can create as many teams and projects as needed.
+
+- **Free plan**: up to 3 users per team
+- **Pro plan**: starts at $10/month; additional users beyond 3 cost $5/month per user
+
+A Pro plan applies to a single team. Upgrade from the **Billing** tab for that team in the Keystatic Cloud dashboard.
+
+## Set up Keystatic Cloud
+
+<Steps>
+  <Step title="Create a Keystatic Cloud account">
+    Go to [keystatic.cloud](https://keystatic.cloud) and sign up. Create a team and a project inside that team.
+
+    Each project is connected to a specific GitHub repository.
+  </Step>
+
+  <Step title="Update your Keystatic config">
+    In your `keystatic.config.ts`, set `storage.kind` to `'cloud'` and add the `cloud.project` property using the team and project name from your Keystatic Cloud dashboard:
+
+    ```typescript keystatic.config.ts
+    import { config } from '@keystatic/core';
+
+    export default config({
+      storage: {
+        kind: 'cloud',
+      },
+      cloud: {
+        project: 'my-team/my-project',
+      },
+      // ...collections and singletons
+    });
+    ```
+
+    <Tip>
+      Each project in Keystatic Cloud has a settings page with a ready-to-paste config snippet. Copy it directly from there.
+    </Tip>
+  </Step>
+
+  <Step title="Add environment variables">
+    Keystatic Cloud injects the required OAuth credentials automatically when editors authenticate through the Cloud-hosted login flow. For self-hosted or custom setups, you can also provide your own GitHub OAuth app credentials via environment variables:
+
+    ```bash .env
+    KEYSTATIC_GITHUB_CLIENT_ID=your_client_id
+    KEYSTATIC_GITHUB_CLIENT_SECRET=your_client_secret
+    KEYSTATIC_SECRET=a_random_secret_string
+    ```
+
+    <Note>
+      When using Keystatic Cloud's managed auth, you do not need to set these variables — the Cloud project handles OAuth for you.
+    </Note>
+  </Step>
+</Steps>
+
+## Cloud Images
+
+Cloud Images is an opt-in image storage and delivery service for Pro teams. It keeps images out of your Git repository and serves them from a CDN with on-the-fly optimisation.
+
+### Enable Cloud Images
+
+1. Subscribe to Keystatic Cloud Pro for your team.
+2. Enable **Cloud Images** from the **Settings** tab of your team.
+3. Each project then has its own Image Library where you can upload images and copy URLs.
+
+### Use the `cloudImage` field
+
+When Cloud Images is enabled for a project, replace the standard `fields.image` with `fields.cloudImage`:
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'cloud' },
+  cloud: { project: 'my-team/my-project' },
+  collections: {
+    posts: collection({
+      label: 'Posts',
+      slugField: 'title',
+      path: 'src/content/posts/*',
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        coverImage: fields.cloudImage({
+          label: 'Cover image',
+        }),
+      },
+    }),
+  },
+});
+```
+
+### Image optimisation via URL parameters
+
+Cloud Image URLs support query parameters for on-the-fly transforms:
+
+| Parameter | Values | Description |
+|-----------|--------|-------------|
+| `fit` | `scale-down`, `contain`, `cover`, `crop` | How the image is resized to fit the given dimensions |
+| `format` (or `f`) | `png`, `avif`, `webp`, `jpeg` | Output format. If omitted, Keystatic Cloud auto-detects the best format for the browser. |
+| `quality` (or `q`) | `1`–`100` | Output quality |
+| `width` (or `w`) | `1`–`10240` | Output width in pixels |
+| `height` (or `h`) | `1`–`10240` | Output height in pixels |
+
+Example URL with transforms:
+
+```
+https://[IMAGE_URL]?width=800&height=400&fit=cover&format=webp
+```
+
+### Cloud Image component block (experimental)
+
+Keystatic also provides a `CloudImage` component block for use inside [document fields](/fields/document). It requires cloud mode with Cloud Images enabled.
+
+<Warning>
+  The `CloudImage` component block is experimental. Full documentation is coming soon.
+</Warning>
+
+## Underlying storage
+
+Keystatic Cloud uses GitHub as the underlying storage layer — content is still committed to your repository as Markdown, YAML, or JSON files. Keystatic Cloud adds the authentication layer on top.
+
+For details on how the GitHub storage layer works, see [GitHub mode](/storage/github-mode).

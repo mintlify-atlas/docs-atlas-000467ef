@@ -1,0 +1,105 @@
+---
+title: "fields.integer()"
+description: "Stores a whole number (integer) value in your content schema."
+---
+
+The `integer` field stores a whole number. It validates that the stored value is an integer — decimal values are not allowed. Use [`fields.number()`](/fields/number) if you need decimals.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript basic
+rating: fields.integer({
+  label: 'Rating',
+})
+```
+
+```typescript with validation
+age: fields.integer({
+  label: 'Age',
+  description: "The person's age.",
+  validation: {
+    isRequired: true,
+    min: 0,
+    max: 120,
+  },
+})
+```
+
+</CodeGroup>
+
+## Options
+
+<ParamField path="label" type="string" required>
+  The label shown above the field in the Admin UI.
+</ParamField>
+
+<ParamField path="description" type="string">
+  Helper text shown below the label in the Admin UI.
+</ParamField>
+
+<ParamField path="defaultValue" type="number">
+  The initial value for the field when creating a new entry. Must be a whole number.
+
+  Defaults to `null` (empty).
+</ParamField>
+
+<ParamField path="validation" type="object">
+  Validation rules applied when saving an entry.
+
+  <ParamField path="validation.isRequired" type="boolean">
+    When `true`, the field must have a value and cannot be left empty.
+  </ParamField>
+
+  <ParamField path="validation.min" type="number">
+    The minimum value allowed (inclusive).
+  </ParamField>
+
+  <ParamField path="validation.max" type="number">
+    The maximum value allowed (inclusive).
+  </ParamField>
+</ParamField>
+
+## Reader API
+
+The `integer` field returns `number | null` in the Reader API. When `validation.isRequired` is set to `true`, TypeScript narrows the type to `number`.
+
+```typescript
+const product = await reader.collections.products.read('my-product');
+const stock: number | null = product.stock;
+```
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    products: collection({
+      label: 'Products',
+      slugField: 'name',
+      schema: {
+        name: fields.slug({ name: { label: 'Name' } }),
+        stock: fields.integer({
+          label: 'Stock',
+          description: 'Number of units available.',
+          defaultValue: 0,
+          validation: {
+            isRequired: true,
+            min: 0,
+          },
+        }),
+      },
+    }),
+  },
+});
+```

@@ -1,0 +1,112 @@
+---
+title: "fields.object()"
+description: "Groups multiple fields into a single nested object in your content schema."
+---
+
+The `object` field groups any number of other fields into a single nested object. It is especially useful as the `element` of an [`fields.array()`](/fields/array), a branch inside [`fields.conditional()`](/fields/conditional), or a block schema inside [`fields.blocks()`](/fields/blocks).
+
+Pass an optional second `options` argument to give the group a visual `label` and `description` in the Admin UI — similar to an HTML `<fieldset>`.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript basic
+author: fields.object({
+  name: fields.text({ label: 'Name' }),
+  email: fields.text({ label: 'Email' }),
+})
+```
+
+```typescript with label and layout
+address: fields.object(
+  {
+    street: fields.text({ label: 'Street' }),
+    city: fields.text({ label: 'City' }),
+    state: fields.text({ label: 'State' }),
+    postcode: fields.text({ label: 'Postcode' }),
+    country: fields.text({ label: 'Country' }),
+  },
+  {
+    label: 'Address',
+    description: 'The mailing address for this contact.',
+    layout: [12, 6, 3, 3, 12],
+  }
+)
+```
+
+</CodeGroup>
+
+## Arguments
+
+<ParamField path="fields" type="Record<string, ComponentSchema>" required>
+  An object whose keys become the property names on the stored value, and whose values are field definitions. Any Keystatic field can be nested here, including other `object` fields.
+</ParamField>
+
+<ParamField path="options" type="object">
+  An optional second argument that controls how the group appears in the Admin UI.
+
+  <ParamField path="options.label" type="string">
+    A heading displayed above the grouped fields, similar to a `<legend>` in HTML.
+  </ParamField>
+
+  <ParamField path="options.description" type="string">
+    Descriptive text shown below the label.
+  </ParamField>
+
+  <ParamField path="options.layout" type="number[]">
+    Controls how many of the 12 available grid columns each field spans. The array must have one entry per field, each value must be between 1 and 12 inclusive, and the total of every row must equal 12.
+
+    Example: `[12, 6, 6]` places the first field on its own full-width row and the next two side-by-side.
+  </ParamField>
+</ParamField>
+
+## Reader API
+
+The `object` field returns a typed plain object whose shape mirrors the `fields` argument.
+
+```typescript
+const person = await reader.collections.people.read('alice');
+const name: string = person.author.name;
+const email: string = person.author.email;
+```
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    people: collection({
+      label: 'People',
+      slugField: 'name',
+      schema: {
+        name: fields.slug({ name: { label: 'Name' } }),
+        author: fields.object(
+          {
+            name: fields.text({ label: 'Display name' }),
+            email: fields.text({ label: 'Email address' }),
+            bio: fields.text({
+              label: 'Bio',
+              multiline: true,
+              description: 'A short author biography.',
+            }),
+          },
+          {
+            label: 'Author details',
+            description: 'Metadata displayed on posts written by this person.',
+          }
+        ),
+      },
+    }),
+  },
+});
+```

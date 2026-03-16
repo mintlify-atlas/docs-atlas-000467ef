@@ -1,0 +1,111 @@
+---
+title: "fields.datetime()"
+description: "Stores a datetime as a YYYY-MM-DDTHH:MM string in your content schema."
+---
+
+The `datetime` field stores a datetime value collected from an `<input type="datetime-local">` form field. Values are stored as strings in the format `YYYY-MM-DDTHH:MM`.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript basic
+scheduledAt: fields.datetime({
+  label: 'Scheduled at',
+})
+```
+
+```typescript with validation and default
+eventDateTime: fields.datetime({
+  label: 'Event date and time',
+  description: 'The date and time the event starts.',
+  defaultValue: { kind: 'now' },
+  validation: {
+    isRequired: true,
+    min: '2020-01-01T00:00',
+  },
+})
+```
+
+</CodeGroup>
+
+## Options
+
+<ParamField path="label" type="string" required>
+  The label shown above the field in the Admin UI.
+</ParamField>
+
+<ParamField path="description" type="string">
+  Helper text shown below the label in the Admin UI.
+</ParamField>
+
+<ParamField path="defaultValue" type="string | { kind: 'now' }">
+  The initial value when creating a new entry. Pass a `YYYY-MM-DDTHH:MM` string to use a fixed datetime, or `{ kind: 'now' }` to default to the current datetime at the time the entry is created.
+
+  Defaults to `null` (empty).
+</ParamField>
+
+<ParamField path="validation" type="object">
+  Validation rules applied when saving an entry.
+
+  <ParamField path="validation.isRequired" type="boolean">
+    When `true`, the field must have a value and cannot be left empty.
+  </ParamField>
+
+  <ParamField path="validation.min" type="string">
+    The earliest allowed datetime, in `YYYY-MM-DDTHH:MM` format (inclusive).
+  </ParamField>
+
+  <ParamField path="validation.max" type="string">
+    The latest allowed datetime, in `YYYY-MM-DDTHH:MM` format (inclusive).
+  </ParamField>
+</ParamField>
+
+## Reader API
+
+The `datetime` field returns `string | null` in the Reader API. The string is always in `YYYY-MM-DDTHH:MM` format. When `validation.isRequired` is set to `true`, TypeScript narrows the type to `string`.
+
+```typescript
+const event = await reader.collections.events.read('my-event');
+const startsAt: string | null = event.startsAt;
+// e.g. '2024-03-15T14:30'
+```
+
+<Note>
+  The value is stored and returned as a plain string, not a JavaScript `Date` object. Parse it with `new Date(value)` if you need date arithmetic. Note that the string does not include a timezone — it reflects the local time entered by the editor.
+</Note>
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    events: collection({
+      label: 'Events',
+      slugField: 'title',
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        startsAt: fields.datetime({
+          label: 'Start date and time',
+          description: 'When this event begins.',
+          defaultValue: { kind: 'now' },
+          validation: { isRequired: true },
+        }),
+        endsAt: fields.datetime({
+          label: 'End date and time',
+          description: 'When this event ends.',
+        }),
+      },
+    }),
+  },
+});
+```

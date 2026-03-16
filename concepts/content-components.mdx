@@ -1,0 +1,254 @@
+---
+title: "Content components"
+description: "Embed reusable, schema-driven components in Markdoc and MDX rich-text fields."
+---
+
+Content components are reusable building blocks that editors can insert into [Markdoc](/fields/markdoc) and [MDX](/fields/mdx) rich-text fields. Each component has a typed schema defined in your config, so editors fill in structured data rather than writing raw markup.
+
+Define content components by passing a `components` object to a `fields.markdoc()` or `fields.mdx()` field:
+
+```tsx keystatic.config.tsx
+import { fields, collection } from '@keystatic/core';
+import { wrapper, block, inline, mark, repeating } from '@keystatic/core/content-components';
+
+export default config({
+  collections: {
+    posts: collection({
+      // ...
+      schema: {
+        body: fields.mdx({
+          label: 'Body',
+          components: {
+            // Content components go here
+          },
+        }),
+      },
+    }),
+  },
+});
+```
+
+There are five component types, each mapping to a different usage pattern in the editor.
+
+---
+
+## Wrapper
+
+A `wrapper` component has an opening and closing tag. The content between the tags can be freeform rich text or other content components.
+
+```tsx
+import { wrapper } from '@keystatic/core/content-components';
+
+Testimonial: wrapper({
+  label: 'Testimonial',
+  schema: {
+    author: fields.text({ label: 'Author' }),
+    role: fields.text({ label: 'Role' }),
+  },
+})
+```
+
+MDX output:
+
+```mdx
+<Testimonial author="Jina Dawkins" role="Head of Product Design">
+
+  I've been very impressed with the work done by the team in such a short period of time.
+
+</Testimonial>
+```
+
+---
+
+## Block
+
+A `block` component is self-closing — it has no children. Use it for standalone embeds like a playlist, a map, or a code sandbox.
+
+```tsx
+import { block } from '@keystatic/core/content-components';
+
+Playlist: block({
+  label: 'Playlist',
+  schema: {
+    id: fields.text({ label: 'Playlist ID' }),
+  },
+})
+```
+
+MDX output:
+
+```mdx
+<Playlist id="5f8a3b3e3f3e4d001f3e4d00" />
+```
+
+---
+
+## Inline
+
+An `inline` component is like a `block` but sits within a line of text rather than on its own line.
+
+```tsx
+import { inline } from '@keystatic/core/content-components';
+
+StatusBadge: inline({
+  label: 'Status badge',
+  schema: {
+    status: fields.select({
+      label: 'Status',
+      options: [
+        { label: 'To do',             value: 'todo' },
+        { label: 'In progress',       value: 'in-progress' },
+        { label: 'Ready for review',  value: 'ready-for-review' },
+        { label: 'Done',              value: 'done' },
+      ],
+      defaultValue: 'todo',
+    }),
+  },
+})
+```
+
+MDX output:
+
+```mdx
+This task is currently <StatusBadge status="in-progress" /> but has no blocker.
+```
+
+---
+
+## Mark
+
+A `mark` component applies formatting to a selection of text, similar to bold or italic. Editors select text in the rich-text editor and then activate the mark from the toolbar.
+
+```tsx
+import { mark } from '@keystatic/core/content-components';
+
+Highlight: mark({
+  label: 'Highlight',
+  schema: {
+    variant: fields.select({
+      label: 'Variant',
+      options: [
+        { label: 'Fluro',    value: 'fluro' },
+        { label: 'Minimal',  value: 'minimal' },
+        { label: 'Brutalist', value: 'brutalist' },
+      ],
+      defaultValue: 'fluro',
+    }),
+  },
+})
+```
+
+MDX output:
+
+```mdx
+This is a <Highlight variant="fluro">highlighted</Highlight> word.
+```
+
+---
+
+## Repeating
+
+A `repeating` component defines a parent/child composition pattern: a wrapper that can contain a fixed set of child component types, used when children are responsible for their own structured data.
+
+```tsx
+import { repeating, wrapper } from '@keystatic/core/content-components';
+
+TestimonialGrid: repeating({
+  label: 'Testimonial grid',
+  children: ['Testimonial'],   // only Testimonial components allowed inside
+  schema: {
+    columns: fields.integer({
+      label: 'Columns',
+      validation: { min: 1, max: 6 },
+    }),
+  },
+}),
+Testimonial: wrapper({
+  label: 'Testimonial',
+  schema: {
+    author: fields.text({ label: 'Author' }),
+    role: fields.text({ label: 'Role' }),
+  },
+}),
+```
+
+MDX output:
+
+```mdx
+<TestimonialGrid columns={2}>
+  <Testimonial author="Jina Dawkins" role="Head of Product Design">
+
+    I've been very impressed with the work done by the team in such a short period of time.
+
+  </Testimonial>
+  <Testimonial author="Leesa Edwards" role="CMO">
+
+    The team makes my job easy. I'm just here to amplify the amazing work everyone is doing!
+
+  </Testimonial>
+</TestimonialGrid>
+```
+
+---
+
+## Rendering on the frontend
+
+Keystatic writes content components to MDX or Markdoc files as regular JSX/component tags. To render them in your application, provide matching React components when you process the content.
+
+<Tabs>
+  <Tab title="Next.js (MDX)">
+    ```tsx app/posts/[slug]/page.tsx
+    import { createReader } from '@keystatic/core/reader';
+    import keystaticConfig from '../../../keystatic.config';
+    import { MDXRemote } from 'next-mdx-remote/rsc';
+    import { Testimonial, Playlist, StatusBadge } from '@/components';
+
+    const reader = createReader(process.cwd(), keystaticConfig);
+
+    export default async function PostPage({ params }) {
+      const post = await reader.collections.posts.read(params.slug);
+      const { content } = await post.body();
+
+      return (
+        <MDXRemote
+          source={content}
+          components={{ Testimonial, Playlist, StatusBadge }}
+        />
+      );
+    }
+    ```
+  </Tab>
+  <Tab title="Astro (Markdoc)">
+    ```astro src/pages/posts/[slug].astro
+    ---
+    import { createReader } from '@keystatic/core/reader';
+    import keystaticConfig from '../../../keystatic.config';
+    import Markdoc from '@markdoc/markdoc';
+    import Testimonial from '@/components/Testimonial.astro';
+
+    const reader = createReader(process.cwd(), keystaticConfig);
+    const post = await reader.collections.posts.read(Astro.params.slug);
+    const { content, renderers } = await post.body();
+    ---
+
+    <article>
+      <renderers.Testimonial component={Testimonial} />
+    </article>
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Type signature
+
+See the latest `content-components` type signatures at [docsmill.dev](https://docsmill.dev/npm/@keystatic/core@latest#/content-components).
+
+<CardGroup cols={2}>
+  <Card title="Format options" icon="file-code" href="/concepts/format-options">
+    Control how content is written to disk.
+  </Card>
+  <Card title="Collections" icon="layer-group" href="/concepts/collections">
+    Add content components to a collection schema.
+  </Card>
+</CardGroup>

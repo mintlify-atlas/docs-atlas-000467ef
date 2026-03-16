@@ -1,0 +1,58 @@
+---
+title: "fields.ignored()"
+description: "Preserves a field value in the data file without exposing it in the Admin UI."
+---
+
+The `ignored` field tells Keystatic to leave a value in the data file untouched. The field is never shown or edited in the Admin UI — Keystatic simply reads it, carries it through, and writes it back unchanged.
+
+This is useful when a field is written by an external process (a CI pipeline, a migration script, or another tool) and must not be overwritten by Keystatic when an editor saves an entry.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+```typescript
+schema: {
+  title: fields.slug({ name: { label: 'Title' } }),
+  // Preserve an `updatedAt` timestamp managed by a CI pipeline
+  updatedAt: fields.ignored(),
+}
+```
+
+## Options
+
+`fields.ignored()` takes no arguments.
+
+## Reader API
+
+The `ignored` field is not included in the Reader API output. The raw value is preserved in the data file, but it is not typed or returned when you call `reader.collections.[collection].read()`.
+
+<Note>
+  If you need to read the value of an ignored field in your application code, access the raw data file directly rather than using the Reader API.
+</Note>
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    posts: collection({
+      label: 'Posts',
+      slugField: 'title',
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        // Managed externally — do not expose in the Admin UI
+        updatedAt: fields.ignored(),
+        publishedAt: fields.ignored(),
+      },
+    }),
+  },
+});
+```

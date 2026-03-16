@@ -1,0 +1,171 @@
+---
+title: "fields.blocks()"
+description: "Stores an ordered list of heterogeneous blocks, each with its own schema."
+---
+
+The `blocks` field is like [`fields.array()`](/fields/array) but each item can have a _different_ schema. You define a map of named block types — each with a `label` and a `schema` — and editors can add any combination of them in any order.
+
+Internally, `fields.blocks()` is implemented as an `array` of a `conditional` field, so the Reader API return type follows that same shape.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript links block
+links: fields.blocks(
+  {
+    page: {
+      label: 'Page',
+      schema: fields.relationship({
+        label: 'Page',
+        collection: 'pages',
+      }),
+    },
+    url: {
+      label: 'External URL',
+      schema: fields.url({ label: 'URL' }),
+    },
+  },
+  { label: 'Links' }
+)
+```
+
+```typescript page builder
+pageSections: fields.blocks(
+  {
+    hero: {
+      label: 'Hero',
+      schema: fields.object({
+        heading: fields.text({ label: 'Heading' }),
+        subheading: fields.text({ label: 'Subheading', multiline: true }),
+        cta: fields.text({ label: 'Call to action label' }),
+      }),
+    },
+    richText: {
+      label: 'Rich text',
+      schema: fields.mdx({ label: 'Content' }),
+    },
+    image: {
+      label: 'Full-width image',
+      schema: fields.object({
+        src: fields.image({
+          label: 'Image',
+          directory: 'public/images/pages',
+          publicPath: '/images/pages/',
+          validation: { isRequired: true },
+        }),
+        alt: fields.text({ label: 'Alt text' }),
+        caption: fields.text({ label: 'Caption' }),
+      }),
+    },
+  },
+  {
+    label: 'Page sections',
+    description: 'Build the page by adding and reordering sections.',
+  }
+)
+```
+
+</CodeGroup>
+
+## Arguments
+
+<ParamField path="blocks" type="Record<string, { label: string; schema: ComponentSchema; itemLabel?: (props) => string }>" required>
+  An object mapping block type names to their definitions. Must contain at least one entry — Keystatic throws at startup otherwise.
+
+  <ParamField path="blocks[type].label" type="string" required>
+    The display name shown in the "Add block" menu.
+  </ParamField>
+
+  <ParamField path="blocks[type].schema" type="ComponentSchema" required>
+    The field schema for this block type. Can be any Keystatic field.
+  </ParamField>
+
+  <ParamField path="blocks[type].itemLabel" type="(props) => string">
+    A function that returns the label shown for an existing item of this block type in the list.
+  </ParamField>
+</ParamField>
+
+<ParamField path="opts" type="object" required>
+  Top-level options for the field.
+
+  <ParamField path="opts.label" type="string" required>
+    The label shown above the block list in the Admin UI.
+  </ParamField>
+
+  <ParamField path="opts.description" type="string">
+    Helper text shown below the label.
+  </ParamField>
+
+  <ParamField path="opts.validation.length.min" type="number">
+    The minimum number of blocks required.
+  </ParamField>
+
+  <ParamField path="opts.validation.length.max" type="number">
+    The maximum number of blocks allowed.
+  </ParamField>
+</ParamField>
+
+## Reader API
+
+The `blocks` field returns an array of `{ discriminant: string; value: T }` objects, where `discriminant` is the block type key and `value` is typed to match that block's schema.
+
+```typescript
+const page = await reader.collections.pages.read('home');
+
+for (const section of page.pageSections) {
+  if (section.discriminant === 'hero') {
+    // section.value is { heading: string; subheading: string; cta: string }
+    console.log(section.value.heading);
+  }
+  if (section.discriminant === 'image') {
+    // section.value is { src: string | null; alt: string; caption: string }
+    console.log(section.value.alt);
+  }
+}
+```
+
+<Note>
+  Because `fields.blocks()` is built on top of `fields.array()` and `fields.conditional()`, all the same TypeScript narrowing behaviour applies when you check `discriminant`.
+</Note>
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    pages: collection({
+      label: 'Pages',
+      slugField: 'title',
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        sections: fields.blocks(
+          {
+            hero: {
+              label: 'Hero',
+              schema: fields.object({
+                heading: fields.text({ label: 'Heading' }),
+                subheading: fields.text({ label: 'Subheading', multiline: true }),
+              }),
+            },
+            richText: {
+              label: 'Rich text',
+              schema: fields.mdx({ label: 'Content' }),
+            },
+          },
+          { label: 'Page sections' }
+        ),
+      },
+    }),
+  },
+});
+```

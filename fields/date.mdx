@@ -1,0 +1,107 @@
+---
+title: "fields.date()"
+description: "Stores a date as a YYYY-MM-DD string in your content schema."
+---
+
+The `date` field stores a date as an [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) formatted string in `YYYY-MM-DD` form. It renders a date picker in the Admin UI.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript basic
+publishedOn: fields.date({
+  label: 'Published on',
+})
+```
+
+```typescript with validation and default
+eventDate: fields.date({
+  label: 'Event date',
+  description: 'The date the event takes place.',
+  defaultValue: { kind: 'today' },
+  validation: {
+    isRequired: true,
+    min: '2020-01-01',
+  },
+})
+```
+
+</CodeGroup>
+
+## Options
+
+<ParamField path="label" type="string" required>
+  The label shown above the field in the Admin UI.
+</ParamField>
+
+<ParamField path="description" type="string">
+  Helper text shown below the label in the Admin UI.
+</ParamField>
+
+<ParamField path="defaultValue" type="string | { kind: 'today' }">
+  The initial value when creating a new entry. Pass a `YYYY-MM-DD` string to use a fixed date, or `{ kind: 'today' }` to default to the current date at the time the entry is created.
+
+  Defaults to `null` (empty).
+</ParamField>
+
+<ParamField path="validation" type="object">
+  Validation rules applied when saving an entry.
+
+  <ParamField path="validation.isRequired" type="boolean">
+    When `true`, the field must have a value and cannot be left empty.
+  </ParamField>
+
+  <ParamField path="validation.min" type="string">
+    The earliest allowed date, in `YYYY-MM-DD` format (inclusive).
+  </ParamField>
+
+  <ParamField path="validation.max" type="string">
+    The latest allowed date, in `YYYY-MM-DD` format (inclusive).
+  </ParamField>
+</ParamField>
+
+## Reader API
+
+The `date` field returns `string | null` in the Reader API. The string is always in `YYYY-MM-DD` format. When `validation.isRequired` is set to `true`, TypeScript narrows the type to `string`.
+
+```typescript
+const post = await reader.collections.posts.read('my-post');
+const publishedOn: string | null = post.publishedOn;
+// e.g. '2024-03-15'
+```
+
+<Note>
+  The value is stored and returned as a plain string, not a JavaScript `Date` object. Parse it with `new Date(value)` if you need date arithmetic.
+</Note>
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    posts: collection({
+      label: 'Posts',
+      slugField: 'title',
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        publishedOn: fields.date({
+          label: 'Published on',
+          description: 'The date this post was published.',
+          defaultValue: { kind: 'today' },
+          validation: { isRequired: true },
+        }),
+      },
+    }),
+  },
+});
+```

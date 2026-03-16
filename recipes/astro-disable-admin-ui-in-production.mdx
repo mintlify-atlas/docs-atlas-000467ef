@@ -1,0 +1,64 @@
+---
+title: "Disable Admin UI in production (Astro)"
+description: "Prevent the Keystatic Admin UI routes from being accessible or indexed in a production Astro deployment."
+---
+
+<Note>
+  This is a community contribution from [Florian Lefebvre](https://florian-lefebvre.dev).
+</Note>
+
+When using the `local` storage strategy, the `/keystatic` routes are available wherever your site is deployed. In production you typically do not want editors (or search engines) accessing the Admin UI.
+
+The approach below uses an environment variable to conditionally mount the Keystatic integration, so the routes are never registered in production.
+
+<Steps>
+  <Step title="Conditionally include the Keystatic integration">
+    Open `astro.config.mjs` and wrap the `keystatic()` integration in a spread expression that checks for a `SKIP_KEYSTATIC` environment variable.
+
+    ```javascript astro.config.mjs
+    import { defineConfig } from 'astro/config';
+    import react from '@astrojs/react';
+    import markdoc from '@astrojs/markdoc';
+    import keystatic from '@keystatic/astro';
+
+    export default defineConfig({
+      integrations: [
+        react(),
+        markdoc(),
+        ...(process.env.SKIP_KEYSTATIC ? [] : [keystatic()]),
+      ],
+    });
+    ```
+
+    When `SKIP_KEYSTATIC` is set to any truthy value, `keystatic()` is omitted from the integrations array entirely. The `/keystatic` routes will not exist in the build output, so they cannot be accessed or indexed.
+  </Step>
+
+  <Step title="Add the environment variable on your hosting platform">
+    Set `SKIP_KEYSTATIC=true` in your production environment. The steps differ by platform:
+
+    <AccordionGroup>
+      <Accordion title="Vercel">
+        1. Go to **Project** → **Settings** → **Environment variables**.
+        2. Set **Key** to `SKIP_KEYSTATIC` and **Value** to `true`.
+        3. Click **Save**.
+
+        See [Vercel's environment variables docs](https://vercel.com/docs/projects/environment-variables) for further details.
+      </Accordion>
+
+      <Accordion title="Netlify">
+        1. Go to **Site** → **Site configuration** → **Environment variables**.
+        2. Click **Add a variable** → **Add a single variable**.
+        3. Set **Key** to `SKIP_KEYSTATIC` and **Value** to `true`.
+        4. Click **Save variable**.
+
+        See [Netlify's environment variables docs](https://docs.netlify.com/environment-variables/get-started/#site-environment-variables) for further details.
+      </Accordion>
+    </AccordionGroup>
+  </Step>
+
+  <Step title="Re-deploy">
+    Re-deploy your project for the environment variable to take effect.
+
+    After re-deploying, the `/keystatic` routes will no longer exist in your production build. They will not appear in sitemaps and will not be indexed by search engines. Your local development environment is unaffected.
+  </Step>
+</Steps>

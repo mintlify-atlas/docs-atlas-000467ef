@@ -1,0 +1,201 @@
+---
+title: "Astro integration"
+description: "Add Keystatic to an existing Astro project and manage content through the Admin UI."
+---
+
+<Note>
+  This guide assumes you have an existing Astro project. If you don't, run `npm create astro@latest` to scaffold one first.
+</Note>
+
+<Steps>
+  <Step title="Install dependencies">
+    Add Astro's React and Markdoc integrations using the `astro add` command:
+
+    ```bash
+    npx astro add react markdoc
+    ```
+
+    Then install the two Keystatic packages:
+
+    <CodeGroup>
+
+    ```bash npm
+    npm install @keystatic/core @keystatic/astro
+    ```
+
+    ```bash pnpm
+    pnpm add @keystatic/core @keystatic/astro
+    ```
+
+    ```bash yarn
+    yarn add @keystatic/core @keystatic/astro
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Update the Astro config">
+    Import and register the `keystatic` integration in your `astro.config.mjs`:
+
+    ```javascript astro.config.mjs
+    import { defineConfig } from 'astro/config'
+    import react from '@astrojs/react'
+    import markdoc from '@astrojs/markdoc'
+    import keystatic from '@keystatic/astro'
+
+    export default defineConfig({
+      integrations: [react(), markdoc(), keystatic()],
+    })
+    ```
+
+    The `keystatic()` integration automatically injects the Admin UI route (`/keystatic/[...params]`) and the API route (`/api/keystatic/[...params]`) — no manual route files required.
+  </Step>
+
+  <Step title="Create the Keystatic config file">
+    Create `keystatic.config.ts` at the root of your project. This file defines your storage mode and content schema.
+
+    The example below configures local storage and a single `posts` collection:
+
+    ```typescript keystatic.config.ts
+    import { config, fields, collection } from '@keystatic/core';
+
+    export default config({
+      storage: {
+        kind: 'local',
+      },
+      collections: {
+        posts: collection({
+          label: 'Posts',
+          slugField: 'title',
+          path: 'src/content/posts/*',
+          format: { contentField: 'content' },
+          schema: {
+            title: fields.slug({ name: { label: 'Title' } }),
+            content: fields.markdoc({ label: 'Content' }),
+          },
+        }),
+      },
+    });
+    ```
+
+    <Note>
+      `storage: { kind: 'local' }` is the recommended starting point. Content is read from and written to your local filesystem. When you're ready to deploy for a team, switch to [GitHub mode](/storage/github-mode).
+    </Note>
+  </Step>
+
+  <Step title="Start the dev server">
+    Start the Astro dev server:
+
+    <CodeGroup>
+
+    ```bash npm
+    npm run dev
+    ```
+
+    ```bash pnpm
+    pnpm dev
+    ```
+
+    ```bash yarn
+    yarn dev
+    ```
+
+    </CodeGroup>
+
+    Visit `http://127.0.0.1:4321/keystatic` to open the Keystatic Admin UI.
+
+    <Note>
+      The Keystatic integration sets the dev server host to `127.0.0.1` automatically. If you previously set `--host 127.0.0.1` in your `dev` script, you can remove that flag.
+    </Note>
+  </Step>
+
+  <Step title="Create your first post">
+    In the Admin UI, navigate to **Posts** and create a new entry. Give it a title and some content, then click **Save**.
+
+    Keystatic writes the file to `src/content/posts/` as a `.mdoc` file:
+
+    ```
+    src
+    └── content
+        └── posts
+            └── my-first-post.mdoc
+    ```
+
+    The saved file will look like this:
+
+    ```markdown src/content/posts/my-first-post.mdoc
+    ---
+    title: My First Post
+    ---
+
+    This is my very first post. I am **super** excited.
+    ```
+  </Step>
+
+  <Step title="Read content in your Astro pages">
+    Keystatic provides a [Reader API](/reader/overview) to pull content from the filesystem into your frontend. Use it in any `.astro` page or component — it runs server-side only.
+
+    **List all posts**
+
+    ```astro src/pages/posts/index.astro
+    ---
+    import { createReader } from '@keystatic/core/reader';
+    import keystaticConfig from '../../../keystatic.config';
+
+    const reader = createReader(process.cwd(), keystaticConfig);
+    const posts = await reader.collections.posts.all();
+    ---
+    <ul>
+      {posts.map(post => (
+        <li>
+          <a href={`/posts/${post.slug}`}>{post.entry.title}</a>
+        </li>
+      ))}
+    </ul>
+    ```
+
+    **Display a single post**
+
+    ```astro src/pages/posts/[slug].astro
+    ---
+    import { createReader } from '@keystatic/core/reader';
+    import keystaticConfig from '../../../keystatic.config';
+
+    export async function getStaticPaths() {
+      const reader = createReader(process.cwd(), keystaticConfig);
+      const posts = await reader.collections.posts.all();
+      return posts.map(post => ({ params: { slug: post.slug } }));
+    }
+
+    const { slug } = Astro.params;
+    const reader = createReader(process.cwd(), keystaticConfig);
+    const post = await reader.collections.posts.read(slug);
+    ---
+
+    <main>
+      <h1>{post?.title}</h1>
+    </main>
+    ```
+
+    <Note>
+      You can also use [Astro's built-in content collections](https://docs.astro.build/en/guides/content-collections/) to render `.mdoc` files — both approaches work alongside Keystatic.
+    </Note>
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="GitHub mode" icon="github" href="/storage/github-mode">
+    Connect Keystatic to a GitHub repository for team editing on deployed sites.
+  </Card>
+  <Card title="Reader API" icon="book-open" href="/reader/overview">
+    Full reference for reading collections and singletons in your frontend.
+  </Card>
+  <Card title="Fields API" icon="list" href="/fields/overview">
+    Explore all available field types for your content schema.
+  </Card>
+  <Card title="Real-time previews" icon="eye" href="/recipes/real-time-previews">
+    Set up live previews while editing content in the Admin UI.
+  </Card>
+</CardGroup>

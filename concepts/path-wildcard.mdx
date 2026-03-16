@@ -1,0 +1,119 @@
+---
+title: "Path wildcard"
+description: "Use wildcard patterns in collection paths for granular control over where content is stored."
+---
+
+The `path` option on Keystatic [collections](/concepts/collections) supports glob-style wildcard patterns. This gives you fine-grained control over where entries are output, enabling monorepo setups and multi-level folder structures.
+
+Two wildcard tokens are available:
+
+| Token | Matches |
+|-------|---------|
+| `*`   | A single path segment (the entry slug) |
+| `**`  | Multiple path segments (slug can contain `/`) |
+
+---
+
+## Single-level wildcard (`*`)
+
+The `*` wildcard is the standard token for most collections. It is replaced by the entry's slug and can appear anywhere in the path, not just at the end.
+
+### Example: collocated docs in a monorepo
+
+Imagine a design-system monorepo where each component has its own package, and you want documentation stored alongside the source:
+
+```
+root/
+├── packages/
+│   └── design-system/
+│       ├── button/
+│       │   ├── src/
+│       │   └── docs/       ← entries go here
+│       └── dropdown/
+│           ├── src/
+│           └── docs/       ← entries go here
+└── apps/
+    └── docs/               ← Keystatic lives here
+```
+
+Set the collection path to:
+
+```typescript
+path: 'packages/design-system/*/docs/'
+```
+
+The `*` is replaced by the component name (e.g. `button`, `dropdown`), so entries for the `button` component are stored at `packages/design-system/button/docs/`.
+
+---
+
+## Multi-level wildcard (`**`)
+
+The `**` wildcard allows slugs that contain `/` characters, enabling a multi-folder structure within a single collection.
+
+### Example: locale-prefixed posts
+
+Suppose you want a single `posts` collection to support content in multiple languages:
+
+```
+content/
+└── posts/
+    ├── en/
+    │   └── post-1.mdoc
+    └── fr/
+        └── post-1.mdoc
+```
+
+Set the collection path to:
+
+```typescript
+path: 'content/posts/**'
+```
+
+Because `**` allows multi-segment slugs, you can create entries with slugs like `en/post-1` and `fr/post-1`. Keystatic maps each slash-separated segment to a real folder.
+
+<Note>
+  Slugs in Keystatic can contain `/` characters, which is what makes the `**` wildcard useful for building hierarchical structures without creating separate collections.
+</Note>
+
+---
+
+## Comparison
+
+<Tabs>
+  <Tab title="Single-level (*)">
+    ```typescript
+    // path: 'content/posts/*'
+    //
+    // Valid slugs:   'my-post', 'hello-world'
+    // Invalid slugs: 'en/my-post'  (slash not allowed)
+    
+    content/
+    └── posts/
+        ├── my-post.yaml
+        └── hello-world.yaml
+    ```
+  </Tab>
+  <Tab title="Multi-level (**)">
+    ```typescript
+    // path: 'content/posts/**'
+    //
+    // Valid slugs:   'en/my-post', 'fr/hello-world'
+    
+    content/
+    └── posts/
+        ├── en/
+        │   └── my-post.yaml
+        └── fr/
+            └── hello-world.yaml
+    ```
+  </Tab>
+</Tabs>
+
+<CardGroup cols={2}>
+  <Card title="Content organisation" icon="folder-tree" href="/concepts/content-organisation">
+    Understand trailing slashes and default path behavior.
+  </Card>
+  <Card title="Collections" icon="layer-group" href="/concepts/collections">
+    Full reference for collection options.
+  </Card>
+</CardGroup>

@@ -1,0 +1,116 @@
+---
+title: "fields.cloudImage()"
+description: "Stores a reference to an image hosted in Keystatic Cloud's Image Library."
+---
+
+The `cloudImage` field integrates with [Keystatic Cloud](/cloud)'s Image Library. Instead of storing the image file itself, it stores metadata (URL, dimensions, alt text) pointing to a cloud-hosted image. This keeps binary assets out of your repository while giving editors a rich image-picker experience.
+
+<Note>
+  `fields.cloudImage()` requires your project to be connected to Keystatic Cloud. See the [Cloud setup guide](/cloud) for details.
+</Note>
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript basic
+featuredImage: fields.cloudImage({
+  label: 'Featured image',
+})
+```
+
+```typescript with validation
+avatar: fields.cloudImage({
+  label: 'Avatar',
+  description: 'The avatar for this user.',
+  validation: {
+    isRequired: true,
+  },
+})
+```
+
+</CodeGroup>
+
+## Options
+
+<ParamField path="label" type="string" required>
+  The label shown above the field in the Admin UI.
+</ParamField>
+
+<ParamField path="description" type="string">
+  Helper text shown below the label in the Admin UI.
+</ParamField>
+
+<ParamField path="validation" type="object">
+  Validation rules applied when saving an entry.
+
+  <ParamField path="validation.isRequired" type="boolean">
+    When `true`, saving without selecting an image is not allowed.
+  </ParamField>
+</ParamField>
+
+## Reader API
+
+The `cloudImage` field returns an object with the following properties, or `null` if no image has been selected:
+
+```typescript
+{
+  src: string;    // The full URL of the image in Keystatic Cloud
+  alt: string;    // The default alt text set in the Image Library
+  width: number;  // The intrinsic width of the image in pixels
+  height: number; // The intrinsic height of the image in pixels
+}
+```
+
+Example:
+
+```typescript
+const author = await reader.collections.authors.read('jane-doe');
+if (author.avatar) {
+  return (
+    <img
+      src={author.avatar.src}
+      alt={author.avatar.alt}
+      width={author.avatar.width}
+      height={author.avatar.height}
+    />
+  );
+}
+```
+
+<Note>
+  Because `width` and `height` are always available, you can pass them directly to `<img>` or Next.js `<Image>` to prevent layout shift without additional measurement steps.
+</Note>
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'cloud' },
+  cloud: {
+    project: 'my-team/my-project',
+  },
+  collections: {
+    authors: collection({
+      label: 'Authors',
+      slugField: 'name',
+      schema: {
+        name: fields.slug({ name: { label: 'Name' } }),
+        avatar: fields.cloudImage({
+          label: 'Avatar',
+          description: 'Profile picture shown on the author page.',
+          validation: { isRequired: true },
+        }),
+      },
+    }),
+  },
+});
+```

@@ -1,0 +1,115 @@
+---
+title: "fields.relationship()"
+description: "Stores a reference to another collection entry by its slug."
+---
+
+The `relationship` field stores the `slug` of another collection entry as a plain string. It renders a searchable combobox in the Admin UI.
+
+<Warning>
+  The field stores only a static slug string. If the referenced entry's slug changes later, the stored value is **not updated** — the relationship will be broken. Plan your slug strategy accordingly.
+</Warning>
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript has-one
+author: fields.relationship({
+  label: 'Author',
+  description: 'The author of this post.',
+  collection: 'authors',
+})
+```
+
+```typescript has-many (wrap in array)
+authors: fields.array(
+  fields.relationship({
+    label: 'Author',
+    collection: 'authors',
+    validation: { isRequired: true },
+  }),
+  {
+    label: 'Authors',
+    itemLabel: props => props.value ?? 'Select an author',
+  }
+)
+```
+
+</CodeGroup>
+
+## Options
+
+<ParamField path="label" type="string" required>
+  The label shown above the field in the Admin UI.
+</ParamField>
+
+<ParamField path="collection" type="string" required>
+  The key of the collection to reference. Must exactly match a key defined in your `config({ collections: { ... } })` object.
+</ParamField>
+
+<ParamField path="description" type="string">
+  Helper text shown below the label in the Admin UI.
+</ParamField>
+
+<ParamField path="validation" type="object">
+  Validation rules applied when saving an entry.
+
+  <ParamField path="validation.isRequired" type="boolean">
+    When `true`, the field must have a selected value and cannot be left empty. TypeScript narrows the return type from `string | null` to `string`.
+  </ParamField>
+</ParamField>
+
+## Reader API
+
+The `relationship` field returns `string | null` — the slug of the referenced entry, or `null` if nothing is selected. When `validation.isRequired` is `true`, TypeScript narrows the type to `string`.
+
+```typescript
+const post = await reader.collections.posts.read('my-post');
+const authorSlug: string | null = post.author;
+
+if (authorSlug) {
+  const author = await reader.collections.authors.read(authorSlug);
+}
+```
+
+<Tip>
+  To fetch the referenced entry in the Reader API, use the returned slug to call `reader.collections.[collection].read(slug)`.
+</Tip>
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    authors: collection({
+      label: 'Authors',
+      slugField: 'name',
+      schema: {
+        name: fields.slug({ name: { label: 'Name' } }),
+      },
+    }),
+    posts: collection({
+      label: 'Posts',
+      slugField: 'title',
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        author: fields.relationship({
+          label: 'Author',
+          description: 'The author of this post.',
+          collection: 'authors',
+          validation: { isRequired: true },
+        }),
+      },
+    }),
+  },
+});
+```

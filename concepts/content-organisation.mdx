@@ -1,0 +1,164 @@
+---
+title: "Content organisation"
+description: "Control exactly where Keystatic stores collection entries and singleton data on disk."
+---
+
+Keystatic stores content as files on disk. You control exactly where those files are written using the `path` option on each collection and singleton.
+
+<Note>
+  Collections require a `*` wildcard in their path. This wildcard is replaced by the entry's slug at save time.
+</Note>
+
+## Path configuration
+
+Pass a `path` string to any collection or singleton in your config:
+
+```javascript keystatic.config.js
+export default config({
+  collections: {
+    posts: collection({
+      label: 'Posts',
+      path: 'content/posts/*/',
+      // ...
+    }),
+  },
+  singletons: {
+    settings: singleton({
+      label: 'Settings',
+      path: 'content/settings/',
+      // ...
+    }),
+  },
+});
+```
+
+The optional trailing slash `/` changes whether Keystatic creates a directory or a flat file for each entry — read on for details.
+
+---
+
+## Collections
+
+The default `path` for a collection (if not specified) is `{collection-key}/*/`.
+
+### With a trailing slash
+
+When the path ends with `/`, each entry is stored inside its own directory named after the slug:
+
+```
+collection-name/
+└── slug/
+    ├── index.yaml
+    └── body.mdoc
+```
+
+For a `posts` collection with `path: 'content/posts/*/'`, two entries produce:
+
+```
+content/
+└── posts/
+    ├── my-first-post/
+    │   ├── index.yaml
+    │   └── body.mdoc
+    └── my-second-post/
+        ├── index.yaml
+        └── body.mdoc
+```
+
+### Without a trailing slash
+
+When the path does not end with `/`, the data file sits directly inside the collection directory:
+
+```
+collection-name/
+├── slug.yaml
+└── slug/
+    └── body.mdoc
+```
+
+For `path: 'content/posts/*'`, the same two entries produce:
+
+```
+content/
+└── posts/
+    ├── my-first-post.yaml
+    ├── my-first-post/
+    │   └── body.mdoc
+    ├── my-second-post.yaml
+    └── my-second-post/
+        └── body.mdoc
+```
+
+---
+
+## Singletons
+
+The default `path` for a singleton (if not specified) is `{singleton-key}/`.
+
+Singleton paths do not contain a `*` wildcard.
+
+### With a trailing slash
+
+The singleton's data is stored inside a directory:
+
+```
+singleton-name/
+├── index.yaml
+└── body.mdoc
+```
+
+### Without a trailing slash
+
+The data is stored in a flat file, with any document fields placed in a sibling directory:
+
+```
+singleton-name.yaml
+singleton-name/
+└── body.mdoc
+```
+
+---
+
+## Images
+
+You can store images in a different location than the rest of the entry data. Use the `directory` option on `fields.image()` to specify an independent output path:
+
+```javascript
+coverImage: fields.image({
+  label: 'Cover image',
+  directory: 'public/images/posts',
+}),
+```
+
+Regardless of where a `posts` entry is stored, the `coverImage` file will always be written to `public/images/posts/{post-slug}`.
+
+---
+
+## Path prefix (monorepos)
+
+In a monorepo, use `storage.pathPrefix` to scope all of Keystatic's paths to a subdirectory instead of adding the prefix to every individual `path` option:
+
+```javascript
+export default config({
+  storage: {
+    kind: 'github',
+    repo: 'my-org/my-repo',
+    pathPrefix: 'apps/my-site',
+  },
+  collections: {
+    posts: collection({
+      label: 'Posts',
+      path: 'content/posts/*/',
+      // Resolves to: apps/my-site/content/posts/*/
+    }),
+  },
+});
+```
+
+<CardGroup cols={2}>
+  <Card title="Path wildcard" icon="asterisk" href="/concepts/path-wildcard">
+    Advanced wildcard patterns for nested folder structures.
+  </Card>
+  <Card title="Format options" icon="file-code" href="/concepts/format-options">
+    Control whether data is stored as YAML or JSON.
+  </Card>
+</CardGroup>

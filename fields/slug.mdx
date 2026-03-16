@@ -1,0 +1,167 @@
+---
+title: "fields.slug()"
+description: "Stores a human-readable name alongside an auto-generated URL slug for use as a collection entry identifier."
+---
+
+The `slug` field stores a human-readable name and an auto-generated URL-friendly slug side by side. It is the recommended field to use as the `slugField` in a collection — the slug value becomes the file or folder name for each entry.
+
+In the Admin UI, editors see two inputs: one for the name and one for the slug. The slug is generated automatically from the name but can be overridden manually.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript basic
+title: fields.slug({
+  name: { label: 'Title' },
+})
+```
+
+```typescript with custom slug options
+title: fields.slug({
+  name: {
+    label: 'Title',
+    description: 'The title of the post.',
+    validation: { isRequired: true },
+  },
+  slug: {
+    label: 'URL slug',
+    description: 'This defines the file name and URL path for this entry.',
+  },
+})
+```
+
+```typescript with custom slug generator
+title: fields.slug({
+  name: { label: 'Title' },
+  slug: {
+    generate: (name) => name.toLowerCase().replace(/\s+/g, '-'),
+  },
+})
+```
+
+</CodeGroup>
+
+## Options
+
+<ParamField path="name" type="object" required>
+  Configuration for the human-readable name input.
+
+  <ParamField path="name.label" type="string" required>
+    The label shown above the name input in the Admin UI.
+  </ParamField>
+
+  <ParamField path="name.description" type="string">
+    Helper text shown below the name input.
+  </ParamField>
+
+  <ParamField path="name.defaultValue" type="string">
+    The initial value for the name input when creating a new entry. The slug is generated from this value automatically.
+  </ParamField>
+
+  <ParamField path="name.validation" type="object">
+    Validation rules for the name input.
+
+    <ParamField path="name.validation.isRequired" type="boolean">
+      When `true`, the name must not be empty.
+    </ParamField>
+
+    <ParamField path="name.validation.length.min" type="number">
+      Minimum character length for the name.
+    </ParamField>
+
+    <ParamField path="name.validation.length.max" type="number">
+      Maximum character length for the name.
+    </ParamField>
+
+    <ParamField path="name.validation.pattern" type="{ regex: RegExp; message?: string }">
+      A regular expression the name must match.
+    </ParamField>
+  </ParamField>
+</ParamField>
+
+<ParamField path="slug" type="object">
+  Configuration for the derived slug input. All options are optional.
+
+  <ParamField path="slug.label" type="string">
+    The label shown above the slug input in the Admin UI. Defaults to `'Slug'`.
+  </ParamField>
+
+  <ParamField path="slug.description" type="string">
+    Helper text shown below the slug input.
+  </ParamField>
+
+  <ParamField path="slug.generate" type="(name: string) => string">
+    A custom function to generate the slug from the name. By default, Keystatic uses its built-in `slugify` function.
+  </ParamField>
+
+  <ParamField path="slug.validation" type="object">
+    Validation rules for the slug input.
+
+    <ParamField path="slug.validation.length.min" type="number">
+      Minimum character length for the slug. Defaults to `1`.
+    </ParamField>
+
+    <ParamField path="slug.validation.length.max" type="number">
+      Maximum character length for the slug.
+    </ParamField>
+
+    <ParamField path="slug.validation.pattern" type="{ regex: RegExp; message?: string }">
+      A regular expression the slug must match.
+    </ParamField>
+  </ParamField>
+</ParamField>
+
+## Reader API
+
+When used as the `slugField` of a collection, the `slug` field returns only the `name` string — the slug itself is the entry's key in the Reader API.
+
+```typescript
+const post = await reader.collections.posts.read('my-post-slug');
+// post.title is the name string, e.g. 'My Post Title'
+const title: string = post.title;
+```
+
+<Note>
+  The `slug` value is used as the collection entry's identifier (the key passed to `reader.collections.posts.read(slug)`). It is not a separate field on the returned entry object when `slugField` is set.
+</Note>
+
+<Tip>
+  `fields.slug()` can also be used with the `slugField` option of an `array` field to generate unique keys for array items.
+</Tip>
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    posts: collection({
+      label: 'Posts',
+      slugField: 'title',
+      path: 'src/content/posts/*',
+      schema: {
+        title: fields.slug({
+          name: {
+            label: 'Title',
+            description: 'The post title shown in listings and the browser tab.',
+            validation: { isRequired: true },
+          },
+          slug: {
+            label: 'URL slug',
+            description: 'Defines the URL path and file name for this post.',
+          },
+        }),
+      },
+    }),
+  },
+});
+```

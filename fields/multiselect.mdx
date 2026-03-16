@@ -1,0 +1,107 @@
+---
+title: "fields.multiselect()"
+description: "Stores zero or more values chosen from a predefined list of options."
+---
+
+The `multiselect` field is similar to [`fields.select()`](/fields/select), but allows editors to pick any number of options at once. In the Admin UI it renders a checkbox for each option.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript basic
+interests: fields.multiselect({
+  label: 'Interests',
+  options: [
+    { label: 'Surfing', value: 'surfing' },
+    { label: 'Basketball', value: 'basketball' },
+    { label: 'Music', value: 'music' },
+    { label: 'Chess', value: 'chess' },
+  ],
+  defaultValue: ['surfing', 'basketball'],
+})
+```
+
+```typescript with description and no default
+categories: fields.multiselect({
+  label: 'Categories',
+  description: 'Select all categories that apply to this post.',
+  options: [
+    { label: 'Design', value: 'design' },
+    { label: 'Engineering', value: 'engineering' },
+    { label: 'Product', value: 'product' },
+    { label: 'Leadership', value: 'leadership' },
+  ],
+})
+```
+
+</CodeGroup>
+
+## Options
+
+<ParamField path="label" type="string" required>
+  The label shown above the field in the Admin UI.
+</ParamField>
+
+<ParamField path="options" type="{ label: string; value: string }[]" required>
+  The list of available choices. Each entry must have a human-readable `label` and a string `value` that is stored in the data file.
+</ParamField>
+
+<ParamField path="defaultValue" type="string[]">
+  An array of values pre-selected when creating a new entry. Each value must match one of the entries in `options`.
+
+  Defaults to `[]` (no selections).
+</ParamField>
+
+<ParamField path="description" type="string">
+  Helper text shown below the label in the Admin UI.
+</ParamField>
+
+## Reader API
+
+The `multiselect` field returns `string[]` in the Reader API — an array of the selected option values.
+
+```typescript
+const post = await reader.collections.posts.read('my-post');
+const categories: string[] = post.categories;
+// e.g. ['design', 'engineering']
+```
+
+<Note>
+  When no options are selected the field returns an empty array `[]`, never `null`.
+</Note>
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    posts: collection({
+      label: 'Posts',
+      slugField: 'title',
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        categories: fields.multiselect({
+          label: 'Categories',
+          description: 'Select all categories that apply to this post.',
+          options: [
+            { label: 'Design', value: 'design' },
+            { label: 'Engineering', value: 'engineering' },
+            { label: 'Product', value: 'product' },
+          ],
+          defaultValue: [],
+        }),
+      },
+    }),
+  },
+});
+```

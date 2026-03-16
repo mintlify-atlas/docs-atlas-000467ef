@@ -1,0 +1,111 @@
+---
+title: "Introduction"
+description: "Keystatic is a TypeScript-first, Git-based CMS that stores content as Markdown, YAML, or JSON — no database required."
+---
+
+Keystatic is a TypeScript-first CMS that stores your content as Markdown, YAML, or JSON files directly in your Git repository. There's no database, no external service lock-in, and a beautiful Admin UI your whole team can use.
+
+It can save data locally, directly to GitHub, or via Keystatic Cloud — giving you full control over where your content lives.
+
+## How it works
+
+<Steps>
+  <Step title="Define your content schema">
+    Create a `keystatic.config.ts` file and declare collections and singletons using Keystatic's TypeScript API. Every field is typed, giving you autocomplete and safety throughout your codebase.
+
+    ```typescript keystatic.config.ts
+    import { config, collection, fields } from '@keystatic/core';
+
+    export default config({
+      storage: { kind: 'local' },
+      collections: {
+        posts: collection({
+          label: 'Posts',
+          slugField: 'title',
+          path: 'src/content/posts/*',
+          format: { contentField: 'content' },
+          schema: {
+            title: fields.slug({ name: { label: 'Title' } }),
+            content: fields.markdoc({ label: 'Content' }),
+          },
+        }),
+      },
+    });
+    ```
+  </Step>
+  <Step title="Edit content in the Admin UI">
+    Run your dev server and visit `/keystatic`. The Admin UI lets editors create and update content without touching code. Every save writes a file to your project — no API calls, no database writes.
+  </Step>
+  <Step title="Read content in your app">
+    Use the Reader API to fetch content at build time or in server components:
+
+    ```typescript
+    import { createReader } from '@keystatic/core/reader';
+    import keystaticConfig from '../keystatic.config';
+
+    const reader = createReader(process.cwd(), keystaticConfig);
+    const posts = await reader.collections.posts.all();
+    ```
+  </Step>
+</Steps>
+
+## Choose your path
+
+Keystatic is designed to work whether you're starting from scratch or adding content management to an existing project.
+
+<CardGroup cols={2}>
+  <Card title="Quick start" icon="rocket" href="/quick-start">
+    Scaffold a new project with the `create-keystatic` CLI. Supports Next.js, Astro, and Remix. Good for trying Keystatic for the first time or starting fresh.
+  </Card>
+  <Card title="Add to an existing project" icon="puzzle-piece" href="/installation/astro">
+    Follow a framework integration guide to add Keystatic to your current codebase with minimal setup.
+  </Card>
+  <Card title="Keystatic Cloud" icon="cloud" href="/cloud">
+    Connect your project to Keystatic Cloud for managed GitHub authentication and image hosting — no custom GitHub app required.
+  </Card>
+  <Card title="GitHub mode" icon="github" href="/storage/github-mode">
+    Store content directly in a GitHub repository. Changes create branches and pull requests for team review workflows.
+  </Card>
+</CardGroup>
+
+## Integration guides
+
+If you have an existing project, pick your framework:
+
+- [Astro integration guide](/installation/astro)
+- [Next.js integration guide](/installation/next-js)
+- [Remix integration guide](/installation/remix)
+
+<Note>
+  More framework guides are coming soon.
+</Note>
+
+## The Admin UI
+
+The Keystatic Admin UI is served from your own project at `/keystatic`. It provides:
+
+- A rich document editor for Markdoc and MDX content fields
+- Form-based editing for YAML and JSON fields
+- Collection and singleton management
+- Asset uploads (when using GitHub or Cloud storage)
+
+Because the Admin UI runs inside your project, there's no third-party dashboard to log into. In local mode it's available the moment you run your dev server.
+
+## The Reader API
+
+The Reader API (`@keystatic/core/reader`) lets you read your content files from your application code. It's designed for use at build time — in static site generators, server components, or any Node.js environment.
+
+```typescript
+import { createReader } from '@keystatic/core/reader';
+import keystaticConfig from '../keystatic.config';
+
+const reader = createReader(process.cwd(), keystaticConfig);
+
+// Read all posts
+const posts = await reader.collections.posts.all();
+
+// Read a single post by slug
+const post = await reader.collections.posts.read('my-first-post');
+```
+
+Because content is stored as files, the Reader API reads directly from disk — no network requests, no latency.

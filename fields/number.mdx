@@ -1,0 +1,116 @@
+---
+title: "fields.number()"
+description: "Stores a decimal number value in your content schema."
+---
+
+The `number` field stores a decimal (floating-point) number. Use it when you need fractional values such as prices, measurements, or ratings. For whole numbers only, use [`fields.integer()`](/fields/integer) instead.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript basic
+price: fields.number({
+  label: 'Price',
+})
+```
+
+```typescript with step and validation
+cost: fields.number({
+  label: 'Cost',
+  description: 'The cost of the item, in steps of 0.01.',
+  step: 0.01,
+  validation: {
+    isRequired: true,
+    min: 0,
+    max: 9999.99,
+    validateStep: true,
+  },
+})
+```
+
+</CodeGroup>
+
+## Options
+
+<ParamField path="label" type="string" required>
+  The label shown above the field in the Admin UI.
+</ParamField>
+
+<ParamField path="description" type="string">
+  Helper text shown below the label in the Admin UI.
+</ParamField>
+
+<ParamField path="defaultValue" type="number">
+  The initial value for the field when creating a new entry.
+
+  Defaults to `null` (empty).
+</ParamField>
+
+<ParamField path="step" type="number">
+  The step size used by the stepper buttons in the Admin UI. Also used as the reference step when `validation.validateStep` is `true`.
+</ParamField>
+
+<ParamField path="validation" type="object">
+  Validation rules applied when saving an entry.
+
+  <ParamField path="validation.isRequired" type="boolean">
+    When `true`, the field must have a value and cannot be left empty.
+  </ParamField>
+
+  <ParamField path="validation.min" type="number">
+    The minimum value allowed (inclusive).
+  </ParamField>
+
+  <ParamField path="validation.max" type="number">
+    The maximum value allowed (inclusive).
+  </ParamField>
+
+  <ParamField path="validation.validateStep" type="boolean">
+    When `true`, validates that the value is a multiple of the `step` option. Has no effect if `step` is not set.
+  </ParamField>
+</ParamField>
+
+## Reader API
+
+The `number` field returns `number | null` in the Reader API. When `validation.isRequired` is set to `true`, TypeScript narrows the type to `number`.
+
+```typescript
+const product = await reader.collections.products.read('my-product');
+const price: number | null = product.price;
+```
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    products: collection({
+      label: 'Products',
+      slugField: 'name',
+      schema: {
+        name: fields.slug({ name: { label: 'Name' } }),
+        price: fields.number({
+          label: 'Price',
+          description: 'Sale price in USD.',
+          step: 0.01,
+          validation: {
+            isRequired: true,
+            min: 0,
+            validateStep: true,
+          },
+        }),
+      },
+    }),
+  },
+});
+```

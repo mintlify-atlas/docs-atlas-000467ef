@@ -1,0 +1,117 @@
+---
+title: "Configuration"
+description: "The Keystatic config file, where content structures and storage paths are defined."
+---
+
+Every Keystatic project exports a `config`. Import the `config()` function from `@keystatic/core` and pass your project options to it:
+
+```typescript keystatic.config.ts
+import { config } from '@keystatic/core'
+
+export default config({
+  // ...
+})
+```
+
+## Complete example
+
+Here's a full config that creates a `posts` collection stored on the local file system under `src/content/posts`. Each post has a `title` and a long-form `content` field:
+
+```typescript keystatic.config.ts
+import { config, fields, collection } from '@keystatic/core';
+
+export default config({
+  storage: {
+    kind: 'local',
+  },
+  collections: {
+    posts: collection({
+      label: 'Posts',
+      slugField: 'title',
+      path: 'src/content/posts/*',
+      format: { contentField: 'content' },
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        content: fields.markdoc({ label: 'Content' }),
+      },
+    }),
+  },
+});
+```
+
+## Options
+
+<ParamField path="storage" type="object" required>
+  Defines how and where Keystatic stores content. The `kind` property accepts `'local'`, `'github'`, or `'cloud'`.
+
+  - **`'local'`** — reads and writes files on your local file system. See [Local mode](/storage/local-mode).
+  - **`'github'`** — connects to a GitHub repository. See [GitHub mode](/storage/github-mode).
+  - **`'cloud'`** — uses Keystatic Cloud for auth and image hosting. See [Cloud](/cloud).
+
+  ```typescript
+  storage: { kind: 'local' }
+  ```
+
+  For `github` and `cloud`, an optional `pathPrefix` narrows Keystatic to a subdirectory (useful in monorepos).
+</ParamField>
+
+<ParamField path="collections" type="object">
+  Defines repeatable content structures such as blog posts, recipes, or testimonials. Each key in the object names a collection and maps to a `collection()` call.
+
+  Learn more on the [Collections](/concepts/collections) page.
+</ParamField>
+
+<ParamField path="singletons" type="object">
+  Defines one-off content structures such as a settings page, site navigation, or a homepage hero.
+
+  Learn more on the [Singletons](/concepts/singletons) page.
+</ParamField>
+
+<ParamField path="ui" type="object">
+  Customizes parts of the Keystatic Admin UI, including the brand name, logo, and sidebar navigation.
+
+  Learn more on the [User interface](/concepts/user-interface) page.
+</ParamField>
+
+<ParamField path="cloud" type="object">
+  Required when `storage.kind` is `'cloud'`. Identifies which Keystatic Cloud project to connect to.
+
+  ```typescript
+  cloud: { project: 'my-org/my-project' }
+  ```
+</ParamField>
+
+<ParamField path="locale" type="string">
+  Sets the locale for the Admin UI. Affects date formatting, text direction, and other locale-sensitive behavior.
+</ParamField>
+
+<ParamField path="storage.branchPrefix" type="string">
+  Scopes which GitHub branches Keystatic interacts with when using `github` or `cloud` storage. Only branches whose names start with this prefix will be listed in the Admin UI, and new branches will be created with this prefix.
+
+  ```typescript
+  storage: {
+    kind: 'github',
+    repo: 'my-org/my-repo',
+    branchPrefix: 'cms/',
+  }
+  ```
+</ParamField>
+
+## Type signature
+
+See the latest `config` type signature at [docsmill.dev](https://docsmill.dev/npm/@keystatic/core@latest#/.config).
+
+<CardGroup cols={2}>
+  <Card title="Collections" icon="layer-group" href="/concepts/collections">
+    Define repeatable content structures.
+  </Card>
+  <Card title="Singletons" icon="file" href="/concepts/singletons">
+    Define one-off content structures.
+  </Card>
+  <Card title="Content organisation" icon="folder-tree" href="/concepts/content-organisation">
+    Control where Keystatic stores files on disk.
+  </Card>
+  <Card title="User interface" icon="paintbrush" href="/concepts/user-interface">
+    Customize the Admin UI branding and navigation.
+  </Card>
+</CardGroup>

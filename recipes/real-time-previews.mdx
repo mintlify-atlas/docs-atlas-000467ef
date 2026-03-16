@@ -1,0 +1,196 @@
+---
+title: "Real-time previews with Next.js Draft Mode"
+description: "Set up immediate content previews in Keystatic using Next.js Draft Mode and the GitHub reader."
+---
+
+One of the downsides of building static sites with content files is the delay between saving changes and seeing them on the website. You typically need to open a PR and wait for deploy previews.
+
+This recipe shows you how to create *immediate* previews of your Keystatic content with Next.js [Draft Mode](https://nextjs.org/docs/app/building-your-application/configuring/draft-mode).
+
+<Note>
+  This recipe assumes you have an existing Next.js and Keystatic project that:
+  - Uses the Next.js [App Router](https://nextjs.org/docs/app)
+  - Uses the [Reader API](/reader/overview) to retrieve content
+  - Is connected to a GitHub repository, running in [GitHub mode](/storage/github-mode) or [cloud mode](/cloud)
+</Note>
+
+<Steps>
+  <Step title="Create the preview start and end routes">
+    Create `app/preview/start/route.tsx`. This route enables Draft Mode and sets a `ks-branch` cookie when accessed, then redirects the editor to the content page they want to preview.
+
+    ```tsx app/preview/start/route.tsx
+    import { redirect } from 'next/navigation';
+    import { draftMode, cookies } from 'next/headers';
+
+    export async function GET(req: Request) {
+      const url = new URL(req.url);
+      const params = url.searchParams;
+      const branch = params.get('branch');
+      const to = params.get('to');
+      if (!branch || !to) {
+        return new Response('Missing branch or to params', { status: 400 });
+      }
+      draftMode().enable();
+      cookies().set('ks-branch', branch);
+      const toUrl = new URL(to, url.origin);
+      toUrl.protocol = url.protocol;
+      toUrl.host = url.host;
+      redirect(toUrl.toString());
+    }
+    ```
+
+    Next, create `app/preview/end/route.tsx`. This route disables Draft Mode and clears the branch cookie.
+
+    ```tsx app/preview/end/route.tsx
+    import { cookies, draftMode } from 'next/headers';
+
+    export function POST(req: Request) {
+      if (req.headers.get('origin') !== new URL(req.url).origin) {
+        return new Response('Invalid origin', { status: 400 });
+      }
+      const referrer = req.headers.get('Referer');
+      if (!referrer) {
+        return new Response('Missing Referer', { status: 400 });
+      }
+      draftMode().disable();
+      cookies().delete('ks-branch');
+      return Response.redirect(referrer, 303);
+    }
+    ```
+  </Step>
+
+  <Step title="Add a 'Stop preview' button to the layout">
+    Update your root layout component so editors can exit Draft Mode while browsing the preview.
+
+    ```tsx app/layout.tsx
+    import { cookies, draftMode } from 'next/headers';
+
+    export default async function RootLayout({
+      children,
+    }: {
+      children: React.ReactNode;
+    }) {
+      const { isEnabled } = draftMode();
+
+      return (
+        <html lang="en">
+          <body>
+            {children}
+
+            {isEnabled && (
+              <div>
+                Draft mode ({cookies().get('ks-branch')?.value}){' '}
+                <form method="POST" action="/preview/end">
+                  <button>End preview</button>
+                </form>
+              </div>
+            )}
+          </body>
+        </html>
+      );
+    }
+    ```
+  </Step>
+
+  <Step title="Add a previewUrl to your collection">
+    In your Keystatic config, add a `previewUrl` key to any collection or singleton you want to preview. Keystatic uses this to generate an **Open preview** button in the Admin UI.
+
+    The `{branch}` and `{slug}` tokens are interpolated automatically at preview time.
+
+    ```typescript keystatic.config.ts
+    import { config, collection, fields } from '@keystatic/core';
+
+    export default config({
+      storage: { kind: 'github', repo: 'REPO_ORG/REPO_NAME' },
+      collections: {
+        posts: collection({
+          label: 'Posts',
+          slugField: 'title',
+          path: 'content/posts/*',
+          previewUrl: `/preview/start?branch={branch}&to=/posts/{slug}`,
+          schema: {
+            title: fields.slug({ name: { label: 'Title' } }),
+          },
+        }),
+      },
+    });
+    ```
+
+    When an editor saves a post on a branch, the Admin UI displays a preview icon next to the **Save** button. Clicking it triggers the `/preview/start` route you created in step 1.
+  </Step>
+
+  <Step title="Create a draft-mode-aware reader">
+    The standard `createReader` only reads from the local filesystem. When Draft Mode is enabled you need to read from GitHub directly so editors see their unsaved branch content.
+
+    Create a reusable reader utility that switches between the two automatically:
+
+    ```typescript src/utils/reader.ts
+    import { createReader } from '@keystatic/core/reader';
+    import { createGitHubReader } from '@keystatic/core/reader/github';
+    import keystaticConfig from '../../keystatic.config';
+    import { cache } from 'react';
+    import { cookies, draftMode } from 'next/headers';
+
+    export const reader = cache(() => {
+      let isDraftModeEnabled = false;
+      // draftMode() throws outside of a request context (e.g. in generateStaticParams)
+      try {
+        isDraftModeEnabled = draftMode().isEnabled;
+      } catch {}
+
+      if (isDraftModeEnabled) {
+        const branch = cookies().get('ks-branch')?.value;
+
+        if (branch) {
+          return createGitHubReader(keystaticConfig, {
+            // Replace with your own repo org and name
+            repo: 'REPO_ORG/REPO_NAME',
+            ref: branch,
+            // Assumes an existing GitHub app; replace with a PAT if using Keystatic Cloud
+            token: cookies().get('keystatic-gh-access-token')?.value,
+          });
+        }
+      }
+
+      // Draft Mode is off — use the regular filesystem reader
+      return createReader(process.cwd(), keystaticConfig);
+    });
+    ```
+
+    <Note>
+      Replace `REPO_ORG/REPO_NAME` with your own repository. If you are using [Keystatic Cloud](/cloud) instead of a GitHub app, replace the `token` line with a personal access token. Live previews may still work without a valid token if your repository is public and you have not hit GitHub's rate limit.
+    </Note>
+  </Step>
+
+  <Step title="Update existing reader calls">
+    Because `reader` is now a function rather than an object, update every place in your codebase that calls it:
+
+    ```typescript
+    // Before
+    const posts = await reader.collections.posts.all();
+
+    // After
+    const posts = await reader().collections.posts.all();
+    ```
+  </Step>
+
+  <Step title="Test the preview">
+    1. Open the Keystatic Admin UI and create (or edit) a post on a new branch.
+    2. Save the entry — a preview icon appears next to the **Save** button.
+    3. Click the preview icon. You should be redirected to your site with Draft Mode enabled, showing the latest branch content.
+    4. Click **End preview** to return to normal mode.
+  </Step>
+</Steps>
+
+## Video walk-through
+
+Here is a short video walk-through of the feature as implemented on the Keystatic website:
+
+<iframe
+  width="100%"
+  style={{ aspectRatio: '16/9', border: 'none', borderRadius: '8px' }}
+  src="https://www.youtube.com/embed/QuoADtLQVCE?si=WfaZm6GYs9zdsjbo"
+  title="Real-time previews with Next.js Draft Mode"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  allowFullScreen
+/>

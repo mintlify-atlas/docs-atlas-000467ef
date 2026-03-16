@@ -1,0 +1,94 @@
+---
+title: "fields.pathReference()"
+description: "Stores a reference to an existing file path within the repository."
+---
+
+The `pathReference` field stores a path to an existing file in the repository. It renders a searchable combobox in the Admin UI, populated with files that match the optional `pattern` glob.
+
+Use this field when you need to reference an asset — such as a video, PDF, or data file — that is tracked in the repository but not managed as a Keystatic collection entry.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript basic
+videoFile: fields.pathReference({
+  label: 'Video file',
+  description: 'A reference to a video file in the public folder.',
+  pattern: 'public/**/*.{mp4,webm}',
+})
+```
+
+```typescript required
+downloadFile: fields.pathReference({
+  label: 'Download file',
+  pattern: 'public/downloads/**/*',
+  validation: { isRequired: true },
+})
+```
+
+</CodeGroup>
+
+## Options
+
+<ParamField path="label" type="string" required>
+  The label shown above the field in the Admin UI.
+</ParamField>
+
+<ParamField path="description" type="string">
+  Helper text shown below the label in the Admin UI.
+</ParamField>
+
+<ParamField path="pattern" type="string">
+  A glob pattern that restricts which files appear in the combobox. For example, `'public/**/*'` limits the selection to files under the `public/` directory.
+
+  When omitted, all repository files are available.
+</ParamField>
+
+<ParamField path="validation" type="object">
+  Validation rules applied when saving an entry.
+
+  <ParamField path="validation.isRequired" type="boolean">
+    When `true`, the field must have a selected path and cannot be left empty. TypeScript narrows the return type from `string | null` to `string`.
+  </ParamField>
+</ParamField>
+
+## Reader API
+
+The `pathReference` field returns `string | null` — the relative file path, or `null` if nothing is selected. When `validation.isRequired` is `true`, TypeScript narrows the type to `string`.
+
+```typescript
+const post = await reader.collections.posts.read('my-post');
+const videoPath: string | null = post.videoFile;
+// e.g. 'public/videos/intro.mp4'
+```
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    posts: collection({
+      label: 'Posts',
+      slugField: 'title',
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        videoFile: fields.pathReference({
+          label: 'Video file',
+          description: 'An optional video to embed in this post.',
+          pattern: 'public/videos/**/*',
+        }),
+      },
+    }),
+  },
+});
+```

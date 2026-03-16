@@ -1,0 +1,123 @@
+---
+title: "Collections"
+description: "Define repeatable content structures — blog posts, recipes, testimonials, and more."
+---
+
+Think of a `collection` as anything you'd want multiple instances of: a series of blog posts, cooking recipes, or testimonials from happy customers.
+
+Collections are defined within the `collections` key of the Keystatic `config`. Each collection has its own key and is wrapped in a `collection()` function imported from `@keystatic/core`.
+
+## Example
+
+Here's how to define a `testimonials` collection where each entry has an `author` and a `quote`:
+
+```typescript keystatic.config.ts
+import { config, fields, collection } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    testimonials: collection({
+      label: 'Testimonials',
+      slugField: 'author',
+      schema: {
+        author: fields.slug({ name: { label: 'Author' } }),
+        quote: fields.text({ label: 'Quote', multiline: true }),
+      },
+    }),
+  },
+});
+```
+
+## Options
+
+<ParamField path="label" type="string" required>
+  The display name for the collection. Shown in the Admin UI sidebar and as the page heading.
+</ParamField>
+
+<ParamField path="schema" type="object" required>
+  Defines the fields each entry in the collection should have. Values are field definitions created with the `fields` helpers from `@keystatic/core`.
+
+  ```typescript
+  schema: {
+    title: fields.slug({ name: { label: 'Title' } }),
+    publishedOn: fields.date({ label: 'Published on' }),
+    body: fields.markdoc({ label: 'Body' }),
+  }
+  ```
+</ParamField>
+
+<ParamField path="slugField" type="string" required>
+  The key within `schema` whose value becomes the URL slug for each entry. Combine with `fields.slug()` to let editors customize and regenerate the slug in the Admin UI.
+
+  ```typescript
+  testimonials: collection({
+    label: 'Testimonials',
+    slugField: 'author',
+    schema: {
+      author: fields.slug({ name: { label: 'Author' } }),
+    },
+  }),
+  ```
+</ParamField>
+
+<ParamField path="path" type="string">
+  Where on disk to store collection entries. Must include a `*` wildcard, which is replaced by the entry's slug at save time.
+
+  ```typescript
+  path: 'src/content/testimonials/*'
+  ```
+
+  Defaults to `{collection-key}/*/` if not provided. Learn more on the [Content organisation](/concepts/content-organisation) page.
+</ParamField>
+
+<ParamField path="format" type="object">
+  Controls the on-disk file format for entries. Use `format.data` to choose `'yaml'` (default) or `'json'`, and `format.contentField` to write a rich-text field as the file body with other fields in frontmatter.
+
+  Learn more on the [Format options](/concepts/format-options) page.
+</ParamField>
+
+<ParamField path="entryLayout" type="'form' | 'content'">
+  Controls the layout of the entry editor in the Admin UI. The default `'form'` layout stacks all fields vertically. The `'content'` layout promotes the rich-text field to the center and moves other fields into a sidebar.
+
+  Learn more on the [Entry layout](/concepts/entry-layout) page.
+</ParamField>
+
+<ParamField path="columns" type="string[]">
+  Additional field keys to display as columns in the collection list view. By default only the slug is shown.
+
+  ```typescript
+  columns: ['title', 'publishedOn']
+  ```
+</ParamField>
+
+<ParamField path="parseSlugForSort" type="(slug: string) => string | number">
+  A function that transforms each entry's slug into a value used for sorting the collection list view. Useful when slugs contain dates or ordering prefixes.
+</ParamField>
+
+<ParamField path="previewUrl" type="string">
+  A URL template for real-time previews of collection entries. See the real-time previews recipe for configuration details.
+</ParamField>
+
+<ParamField path="template" type="string">
+  Path to an existing collection entry or file to use as a starting point when creating new entries.
+</ParamField>
+
+## Type signature
+
+See the latest `Collection` type signature at [docsmill.dev](https://docsmill.dev/npm/@keystatic/core@latest#/.Collection).
+
+<CardGroup cols={2}>
+  <Card title="Content organisation" icon="folder-tree" href="/concepts/content-organisation">
+    Control where collection entries are stored on disk.
+  </Card>
+  <Card title="Format options" icon="file-code" href="/concepts/format-options">
+    Choose between YAML, JSON, and single-file output.
+  </Card>
+  <Card title="Entry layout" icon="layout-panel-left" href="/concepts/entry-layout">
+    Put the rich-text editor front and center.
+  </Card>
+  <Card title="Path wildcard" icon="asterisk" href="/concepts/path-wildcard">
+    Use wildcards for nested folder structures.
+  </Card>
+</CardGroup>

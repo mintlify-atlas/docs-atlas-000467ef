@@ -1,0 +1,132 @@
+---
+title: "fields.conditional()"
+description: "Renders different fields based on the value of a discriminant field."
+---
+
+The `conditional` field displays a different set of fields depending on the current value of a _discriminant_. The discriminant is either a [`fields.checkbox()`](/fields/checkbox) (producing `true`/`false` branches) or a [`fields.select()`](/fields/select) (producing one branch per option value).
+
+Pass the discriminant field as the first argument and an object mapping each possible discriminant value to a schema as the second argument.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript checkbox discriminant
+// Show custom SEO fields only when the editor opts in.
+seo: fields.conditional(
+  fields.checkbox({ label: 'Define custom SEO tags', defaultValue: false }),
+  {
+    true: fields.object({
+      title: fields.text({ label: 'SEO title' }),
+      description: fields.text({ label: 'SEO description' }),
+    }),
+    false: fields.empty(),
+  }
+)
+```
+
+```typescript select discriminant
+// Choose between no media, an image, or a video.
+featuredMedia: fields.conditional(
+  fields.select({
+    label: 'Featured media',
+    description: 'Optional hero media for this entry.',
+    options: [
+      { label: 'No media', value: 'none' },
+      { label: 'Image', value: 'image' },
+      { label: 'Video', value: 'video' },
+    ],
+    defaultValue: 'none',
+  }),
+  {
+    none: fields.empty(),
+    image: fields.object({
+      asset: fields.image({
+        label: 'Image',
+        directory: 'public/images',
+        publicPath: '/images/',
+        validation: { isRequired: true },
+      }),
+      alt: fields.text({ label: 'Alt text' }),
+    }),
+    video: fields.object({
+      url: fields.url({ label: 'YouTube URL', validation: { isRequired: true } }),
+    }),
+  }
+)
+```
+
+</CodeGroup>
+
+## Arguments
+
+<ParamField path="discriminant" type="BasicFormField<string> | BasicFormField<boolean>" required>
+  The field that drives which branch is shown. Use `fields.checkbox()` for boolean conditions or `fields.select()` for named conditions.
+</ParamField>
+
+<ParamField path="values" type="Record<string, ComponentSchema>" required>
+  An object mapping every possible discriminant value to a field schema.
+
+  - When the discriminant is a `checkbox`, keys must be `"true"` and `"false"`.
+  - When the discriminant is a `select`, keys must match each option's `value`.
+
+  Use `fields.empty()` for a branch that should show no additional fields.
+</ParamField>
+
+## Reader API
+
+The `conditional` field returns `{ discriminant: string | boolean; value: T }` where `T` is the type of the selected branch's schema.
+
+```typescript
+const post = await reader.collections.posts.read('my-post');
+
+if (post.seo.discriminant === true) {
+  // post.seo.value is typed as { title: string; description: string }
+  console.log(post.seo.value.title);
+}
+```
+
+<Note>
+  TypeScript narrows the `value` type when you check `discriminant` with an `if` or `switch` statement, giving you type-safe access to each branch's fields.
+</Note>
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    posts: collection({
+      label: 'Posts',
+      slugField: 'title',
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        seo: fields.conditional(
+          fields.checkbox({
+            label: 'Define custom SEO tags',
+            defaultValue: false,
+          }),
+          {
+            true: fields.object({
+              title: fields.text({ label: 'SEO title' }),
+              description: fields.text({
+                label: 'SEO description',
+                multiline: true,
+              }),
+            }),
+            false: fields.empty(),
+          }
+        ),
+      },
+    }),
+  },
+});
+```

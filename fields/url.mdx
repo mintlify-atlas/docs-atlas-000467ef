@@ -1,0 +1,97 @@
+---
+title: "fields.url()"
+description: "Stores a sanitised URL string in your content schema."
+---
+
+The `url` field stores a URL string. It validates that the value is a well-formed URL and sanitises it using `@braintree/sanitize-url` to prevent malicious values.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript basic
+website: fields.url({
+  label: 'Website',
+})
+```
+
+```typescript required with description
+website: fields.url({
+  label: 'Website',
+  description: 'The author\'s personal website.',
+  validation: {
+    isRequired: true,
+  },
+})
+```
+
+</CodeGroup>
+
+## Options
+
+<ParamField path="label" type="string" required>
+  The label shown above the field in the Admin UI.
+</ParamField>
+
+<ParamField path="description" type="string">
+  Helper text shown below the label in the Admin UI.
+</ParamField>
+
+<ParamField path="defaultValue" type="string">
+  The initial URL value for the field when creating a new entry.
+
+  Defaults to `null` (empty).
+</ParamField>
+
+<ParamField path="validation" type="object">
+  Validation rules applied when saving an entry.
+
+  <ParamField path="validation.isRequired" type="boolean">
+    When `true`, the field must have a value. An empty URL is treated as `null` and will fail validation.
+  </ParamField>
+</ParamField>
+
+## Reader API
+
+The `url` field returns `string | null` in the Reader API. When `validation.isRequired` is set to `true`, TypeScript narrows the type to `string`.
+
+```typescript
+const author = await reader.singletons.author.read();
+const website: string | null = author.website;
+```
+
+<Note>
+  The stored value is the sanitised URL. If the user enters a value that is not a valid URL, it will fail validation and not be saved.
+</Note>
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    authors: collection({
+      label: 'Authors',
+      slugField: 'name',
+      schema: {
+        name: fields.slug({ name: { label: 'Name' } }),
+        website: fields.url({
+          label: 'Website',
+          description: 'The author\'s personal website or portfolio.',
+        }),
+        twitter: fields.url({
+          label: 'Twitter profile',
+        }),
+      },
+    }),
+  },
+});
+```

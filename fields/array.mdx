@@ -1,0 +1,143 @@
+---
+title: "fields.array()"
+description: "Stores an ordered list of items that all share the same field schema."
+---
+
+The `array` field creates an "Add one more" list where every item has the same shape. Pass a single field definition as the first argument — if you need each item to have multiple properties, wrap them in a [`fields.object()`](/fields/object).
+
+Use the `itemLabel` option to give each list item a meaningful label in the Admin UI instead of the default `Item 1`, `Item 2`, etc.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript simple text array
+tags: fields.array(
+  fields.text({ label: 'Tag' }),
+  {
+    label: 'Tags',
+    itemLabel: props => props.value,
+  }
+)
+```
+
+```typescript array of objects
+relatedLinks: fields.array(
+  fields.object({
+    label: fields.text({ label: 'Label' }),
+    url: fields.url({ label: 'URL' }),
+  }),
+  {
+    label: 'Related links',
+    itemLabel: props => props.fields.label.value ?? 'Untitled link',
+  }
+)
+```
+
+```typescript with validation
+teamMembers: fields.array(
+  fields.object({
+    name: fields.text({ label: 'Name' }),
+    role: fields.text({ label: 'Role' }),
+  }),
+  {
+    label: 'Team members',
+    itemLabel: props => props.fields.name.value,
+    validation: {
+      length: { min: 1, max: 10 },
+    },
+  }
+)
+```
+
+</CodeGroup>
+
+## Arguments
+
+<ParamField path="element" type="ComponentSchema" required>
+  The field definition for each item in the list. This can be any Keystatic field, including `fields.object()` for multi-property items.
+</ParamField>
+
+<ParamField path="options" type="object">
+  An optional second argument.
+
+  <ParamField path="options.label" type="string">
+    The label shown above the list in the Admin UI. Defaults to `'Items'`.
+  </ParamField>
+
+  <ParamField path="options.description" type="string">
+    Helper text shown below the label.
+  </ParamField>
+
+  <ParamField path="options.itemLabel" type="(props) => string">
+    A function that returns the display label for each list item. `props` provides access to the current values of the item's fields.
+  </ParamField>
+
+  <ParamField path="options.slugField" type="string">
+    The key of a slug-typed field inside an `object` element. When set, Keystatic uses the slug value in file paths (e.g. `/authors/alice/bio.mdoc`) instead of numeric indexes (`/authors/0/bio.mdoc`). The slug is still written to the YAML/JSON data and must be unique within the array.
+  </ParamField>
+
+  <ParamField path="options.validation" type="object">
+    Validation rules for the list as a whole.
+
+    <ParamField path="options.validation.length.min" type="number">
+      The minimum number of items required.
+    </ParamField>
+
+    <ParamField path="options.validation.length.max" type="number">
+      The maximum number of items allowed.
+    </ParamField>
+  </ParamField>
+</ParamField>
+
+## Reader API
+
+The `array` field returns an array typed to match the element schema.
+
+```typescript
+const post = await reader.collections.posts.read('my-post');
+const tags: string[] = post.tags;
+const links: { label: string; url: string }[] = post.relatedLinks;
+```
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    posts: collection({
+      label: 'Posts',
+      slugField: 'title',
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        tags: fields.array(
+          fields.text({ label: 'Tag' }),
+          {
+            label: 'Tags',
+            itemLabel: props => props.value,
+          }
+        ),
+        relatedLinks: fields.array(
+          fields.object({
+            label: fields.text({ label: 'Label' }),
+            url: fields.url({ label: 'URL' }),
+          }),
+          {
+            label: 'Related links',
+            itemLabel: props => props.fields.label.value ?? 'Untitled link',
+          }
+        ),
+      },
+    }),
+  },
+});
+```

@@ -1,0 +1,176 @@
+---
+title: "fields.file()"
+description: "Stores an arbitrary file in your repository with configurable directory and public path."
+---
+
+The `file` field stores any type of file (PDFs, videos, archives, etc.) in your local file system or Git repository. In the Admin UI it renders a file picker. The file is committed to your repository alongside your content.
+
+The `file` field works the same way as [`fields.image()`](/fields/image) but without image-specific constraints — you can upload any file type.
+
+## Import
+
+```typescript
+import { fields } from '@keystatic/core';
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript basic
+resume: fields.file({
+  label: 'Resume',
+})
+```
+
+```typescript with directory and publicPath
+resume: fields.file({
+  label: 'Resume',
+  description: 'Summary of qualifications for this job applicant.',
+  directory: 'public/files/resumes',
+  publicPath: '/files/resumes/',
+  validation: {
+    isRequired: true,
+  },
+})
+```
+
+</CodeGroup>
+
+## File storage
+
+By default, the `file` field creates a directory named after the entry slug and stores a file named after the field key inside it.
+
+For example, given this config:
+
+```typescript
+applicants: collection({
+  schema: {
+    resume: fields.file({ label: 'Resume' }),
+  },
+})
+```
+
+Creating a `jane-doe` applicant entry and uploading a PDF produces:
+
+```
+applicants/
+  jane-doe/
+    resume.pdf
+  jane-doe.yaml
+```
+
+The value stored in `jane-doe.yaml` is:
+
+```yaml
+resume: resume.pdf
+```
+
+### Configuring `directory`
+
+Set `directory` to store files in a location outside the content directory, such as a `public` folder:
+
+```typescript
+resume: fields.file({
+  label: 'Resume',
+  directory: 'public/files/resumes',
+})
+```
+
+With this config the `jane-doe` PDF is stored at:
+
+```
+public/
+  files/
+    resumes/
+      jane-doe/
+        resume.pdf
+applicants/
+  jane-doe.yaml
+```
+
+### Configuring `publicPath`
+
+`publicPath` sets the URL prefix prepended to the filename when writing the value to the entry data file:
+
+```typescript
+resume: fields.file({
+  label: 'Resume',
+  directory: 'public/files/resumes',
+  publicPath: '/files/resumes/',
+})
+```
+
+With this config the `jane-doe.yaml` value becomes:
+
+```yaml
+resume: /files/resumes/jane-doe/resume.pdf
+```
+
+## Options
+
+<ParamField path="label" type="string" required>
+  The label shown above the field in the Admin UI.
+</ParamField>
+
+<ParamField path="description" type="string">
+  Helper text shown below the label in the Admin UI.
+</ParamField>
+
+<ParamField path="directory" type="string">
+  The directory (relative to your project root) where the uploaded file is stored. Defaults to the same directory as the entry.
+</ParamField>
+
+<ParamField path="publicPath" type="string">
+  The URL prefix prepended to the file path when writing the value to the entry data file. Set this to the path from which your framework serves static assets (e.g., `'/files/resumes/'`). When omitted, only the bare filename is stored.
+</ParamField>
+
+<ParamField path="validation" type="object">
+  Validation rules applied when saving an entry.
+
+  <ParamField path="validation.isRequired" type="boolean">
+    When `true`, saving without a file is not allowed.
+  </ParamField>
+</ParamField>
+
+## Reader API
+
+The `file` field returns `string | null` from the Reader API. The string is the full public path (prefix + filename).
+
+```typescript
+const applicant = await reader.collections.applicants.read('jane-doe');
+// applicant.resume is '/files/resumes/jane-doe/resume.pdf' or null
+if (applicant.resume) {
+  return <a href={applicant.resume}>Download resume</a>;
+}
+```
+
+<Note>
+  When `validation.isRequired` is `true`, the TypeScript type is `string` (never `null`). When it is `false` or omitted, the type is `string | null`.
+</Note>
+
+## In your config
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  collections: {
+    applicants: collection({
+      label: 'Applicants',
+      slugField: 'name',
+      schema: {
+        name: fields.slug({ name: { label: 'Name' } }),
+        resume: fields.file({
+          label: 'Resume',
+          description: 'PDF resume for this applicant.',
+          directory: 'public/files/resumes',
+          publicPath: '/files/resumes/',
+          validation: { isRequired: true },
+        }),
+      },
+    }),
+  },
+});
+```

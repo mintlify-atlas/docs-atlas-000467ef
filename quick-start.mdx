@@ -1,0 +1,168 @@
+---
+title: "Quick start"
+description: "The fastest way to get started with Keystatic — scaffold a new project in under five minutes."
+---
+
+The quickest way to start with Keystatic is the `create-keystatic` CLI. It scaffolds a complete project — your choice of Next.js, Astro, or Remix — already integrated with Keystatic.
+
+## Create a new project
+
+<Steps>
+  <Step title="Run the CLI">
+    Open your terminal and run one of the following commands:
+
+    <CodeGroup>
+
+    ```bash npm
+    npm create @keystatic@latest
+    ```
+
+    ```bash pnpm
+    pnpm create @keystatic@latest
+    ```
+
+    ```bash yarn
+    yarn create @keystatic
+    ```
+
+    </CodeGroup>
+
+    The CLI will prompt you to:
+    - Pick a framework (Next.js, Astro, or Remix)
+    - Choose a project name
+  </Step>
+
+  <Step title="Install dependencies">
+    Navigate into your new project directory and install dependencies:
+
+    <CodeGroup>
+
+    ```bash npm
+    cd my-keystatic-app
+    npm install
+    ```
+
+    ```bash pnpm
+    cd my-keystatic-app
+    pnpm install
+    ```
+
+    ```bash yarn
+    cd my-keystatic-app
+    yarn
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Start the dev server">
+    <CodeGroup>
+
+    ```bash npm
+    npm run dev
+    ```
+
+    ```bash pnpm
+    pnpm dev
+    ```
+
+    ```bash yarn
+    yarn dev
+    ```
+
+    </CodeGroup>
+
+    The dev server starts at:
+    - **Next.js** → `http://localhost:3000`
+    - **Astro** → `http://localhost:4321`
+    - **Remix** → `http://localhost:2222`
+  </Step>
+
+  <Step title="Open the Admin UI">
+    Visit `/keystatic` on your local dev server (e.g. `http://localhost:3000/keystatic`).
+
+    You'll see the Keystatic Admin UI, ready to use — no login required in local mode.
+  </Step>
+</Steps>
+
+## What the generated project includes
+
+The scaffolded project comes with:
+
+- A `keystatic.config.ts` at the root, pre-configured with a sample collection
+- The Keystatic API route set up for your framework
+- A working dev environment with local storage mode enabled
+
+## The config file
+
+The `keystatic.config.ts` is the heart of your Keystatic setup. It defines your content schema — what collections and singletons exist, what fields they have, and where files are stored.
+
+Here's the config the CLI generates:
+
+```typescript keystatic.config.ts
+import { config, collection, fields } from '@keystatic/core';
+
+export default config({
+  storage: {
+    kind: 'local',
+  },
+  collections: {
+    posts: collection({
+      label: 'Posts',
+      slugField: 'title',
+      path: 'src/content/posts/*',
+      format: { contentField: 'content' },
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        content: fields.markdoc({
+          label: 'Content',
+        }),
+      },
+    }),
+  },
+});
+```
+
+- `storage: { kind: 'local' }` tells Keystatic to read and write files on your local filesystem.
+- `collections.posts` defines a `posts` collection where each entry is stored as a Markdoc file under `src/content/posts/`.
+- `slugField: 'title'` means the file name is derived from the post's title.
+
+<Note>
+  Local mode stores content directly on your filesystem. It's ideal for development and single-developer projects. For team workflows with GitHub-based review, see [GitHub mode](/storage/github-mode) or [Keystatic Cloud](/cloud).
+</Note>
+
+## Reading content in your app
+
+Keystatic provides a Reader API for fetching content at build time or in server-rendered pages:
+
+```typescript
+import { createReader } from '@keystatic/core/reader';
+import keystaticConfig from '../keystatic.config';
+
+const reader = createReader(process.cwd(), keystaticConfig);
+
+// Get all posts
+const posts = await reader.collections.posts.all();
+
+// Get a single post by slug
+const post = await reader.collections.posts.read('hello-world');
+```
+
+Because content lives on disk, `createReader` reads files directly — no network requests involved.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Astro integration" icon="rocket" href="/installation/astro">
+    Add Keystatic to an existing Astro project.
+  </Card>
+  <Card title="Next.js integration" icon="rectangle-terminal" href="/installation/next-js">
+    Add Keystatic to an existing Next.js project.
+  </Card>
+  <Card title="Remix integration" icon="layer-group" href="/installation/remix">
+    Add Keystatic to an existing Remix project.
+  </Card>
+  <Card title="Keystatic Cloud" icon="cloud" href="/cloud">
+    Enable team editing with managed GitHub auth and image hosting.
+  </Card>
+</CardGroup>

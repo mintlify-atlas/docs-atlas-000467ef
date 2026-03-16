@@ -1,0 +1,91 @@
+---
+title: "Singletons"
+description: "Define one-off content structures like a settings page, site navigation, or homepage hero."
+---
+
+When you want a single data entry rather than a repeatable list, use a `singleton`. Common examples include a site settings page, a global navigation structure, or a homepage hero section.
+
+Singletons are defined within the `singletons` key of the Keystatic `config`. Each singleton has its own key and is wrapped in a `singleton()` function imported from `@keystatic/core`.
+
+## Example
+
+Here's how to define a `settings` singleton with a `siteName` and `tagline` field:
+
+```typescript keystatic.config.ts
+import { config, fields, singleton } from '@keystatic/core';
+
+export default config({
+  storage: { kind: 'local' },
+  singletons: {
+    settings: singleton({
+      label: 'Settings',
+      schema: {
+        siteName: fields.text({ label: 'Site name' }),
+        tagline: fields.text({ label: 'Tagline' }),
+      },
+    }),
+  },
+});
+```
+
+## Options
+
+<ParamField path="label" type="string" required>
+  The display name for the singleton. Shown in the Admin UI sidebar and as the page heading.
+</ParamField>
+
+<ParamField path="schema" type="object" required>
+  Defines the fields the singleton should have. Values are field definitions created with the `fields` helpers from `@keystatic/core`.
+
+  ```typescript
+  schema: {
+    siteName: fields.text({ label: 'Site name' }),
+    logoUrl: fields.image({ label: 'Logo' }),
+  }
+  ```
+</ParamField>
+
+<ParamField path="path" type="string">
+  Where on disk to store the singleton data. Unlike collections, singletons do not use a `*` wildcard.
+
+  ```typescript
+  path: 'content/settings'
+  ```
+
+  Defaults to `{singleton-key}/` if not provided. A trailing slash puts the data inside a directory; without one it is stored in a single file. Learn more on the [Content organisation](/concepts/content-organisation) page.
+</ParamField>
+
+<ParamField path="format" type="object">
+  Controls the on-disk file format. Use `format.data` to choose `'yaml'` (default) or `'json'`, and `format.contentField` to write a rich-text field as the file body with other fields in frontmatter.
+
+  Learn more on the [Format options](/concepts/format-options) page.
+</ParamField>
+
+<ParamField path="entryLayout" type="'form' | 'content'">
+  Controls the layout of the editor in the Admin UI. The default `'form'` layout stacks all fields vertically. The `'content'` layout promotes the rich-text field to the center and moves other fields into a sidebar.
+
+  Learn more on the [Entry layout](/concepts/entry-layout) page.
+</ParamField>
+
+<ParamField path="previewUrl" type="string">
+  A URL template for real-time previews of the singleton content.
+</ParamField>
+
+## Type signature
+
+See the latest `Singleton` type signature at [docsmill.dev](https://docsmill.dev/npm/@keystatic/core@latest#/.Singleton).
+
+<CardGroup cols={2}>
+  <Card title="Collections" icon="layer-group" href="/concepts/collections">
+    Define repeatable content, like blog posts.
+  </Card>
+  <Card title="Content organisation" icon="folder-tree" href="/concepts/content-organisation">
+    Control where singleton data is stored on disk.
+  </Card>
+  <Card title="Format options" icon="file-code" href="/concepts/format-options">
+    Choose between YAML, JSON, and single-file output.
+  </Card>
+  <Card title="Entry layout" icon="layout-panel-left" href="/concepts/entry-layout">
+    Put the rich-text editor front and center.
+  </Card>
+</CardGroup>

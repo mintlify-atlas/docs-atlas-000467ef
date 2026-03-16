@@ -1,0 +1,316 @@
+---
+title: "Next.js integration"
+description: "Add Keystatic to an existing Next.js project using the App Router or Pages Router."
+---
+
+<Note>
+  This guide assumes you have an existing Next.js project (v14 or later). If you don't, run `npx create-next-app@latest` to scaffold one first.
+</Note>
+
+<Steps>
+  <Step title="Install dependencies">
+    Install `@keystatic/core`, `@keystatic/next`, and `@markdoc/markdoc`:
+
+    <CodeGroup>
+
+    ```bash npm
+    npm install @keystatic/core @keystatic/next @markdoc/markdoc
+    ```
+
+    ```bash pnpm
+    pnpm add @keystatic/core @keystatic/next @markdoc/markdoc
+    ```
+
+    ```bash yarn
+    yarn add @keystatic/core @keystatic/next @markdoc/markdoc
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Create the Keystatic config file">
+    Create `keystatic.config.ts` at the root of your project. This file defines your storage mode and content schema.
+
+    The example below configures local storage and a single `posts` collection:
+
+    ```typescript keystatic.config.ts
+    import { config, fields, collection } from '@keystatic/core';
+
+    export default config({
+      storage: {
+        kind: 'local',
+      },
+      collections: {
+        posts: collection({
+          label: 'Posts',
+          slugField: 'title',
+          path: 'src/content/posts/*',
+          format: { contentField: 'content' },
+          schema: {
+            title: fields.slug({ name: { label: 'Title' } }),
+            content: fields.markdoc({ label: 'Content' }),
+          },
+        }),
+      },
+    });
+    ```
+
+    <Note>
+      `storage: { kind: 'local' }` is the recommended starting point. Content is read from and written to your local filesystem. When you're ready to deploy for a team, switch to [GitHub mode](/storage/github-mode).
+    </Note>
+  </Step>
+
+  <Step title="Set up the API route and Admin UI">
+    Keystatic requires two routes: an API handler and an Admin UI page. The setup differs slightly between the App Router and Pages Router.
+
+    <Tabs>
+      <Tab title="App Router">
+        **API route** — handles all Keystatic backend requests:
+
+        ```typescript src/app/api/keystatic/[...params]/route.ts
+        import { makeRouteHandler } from '@keystatic/next/route-handler';
+        import config from '../../../../../keystatic.config';
+
+        export const { GET, POST } = makeRouteHandler({ config });
+        ```
+
+        **Admin UI component** — renders the Keystatic interface:
+
+        ```typescript src/app/keystatic/keystatic.ts
+        "use client";
+
+        import { makePage } from '@keystatic/next/ui/app';
+        import config from '../../../keystatic.config';
+
+        export default makePage(config);
+        ```
+
+        **Layout** — mounts the Admin UI component:
+
+        ```tsx src/app/keystatic/layout.tsx
+        import KeystaticApp from './keystatic';
+
+        export default function Layout() {
+          return <KeystaticApp />;
+        }
+        ```
+
+        **Catch-all page** — required for client-side routing within the Admin UI:
+
+        ```tsx src/app/keystatic/[[...params]]/page.tsx
+        export default function Page() {
+          return null;
+        }
+        ```
+      </Tab>
+      <Tab title="Pages Router">
+        **API route** — handles all Keystatic backend requests:
+
+        ```typescript pages/api/keystatic/[...params].ts
+        import { makeAPIRouteHandler } from '@keystatic/next/api';
+        import config from '../../../keystatic.config';
+
+        export default makeAPIRouteHandler({ config });
+        ```
+
+        **Admin UI page** — renders the Keystatic interface:
+
+        ```tsx pages/keystatic/[[...params]].tsx
+        import { makePage } from '@keystatic/next/ui/pages';
+        import config from '../../keystatic.config';
+
+        export default makePage(config);
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Start the dev server">
+    <CodeGroup>
+
+    ```bash npm
+    npm run dev
+    ```
+
+    ```bash pnpm
+    pnpm dev
+    ```
+
+    ```bash yarn
+    yarn dev
+    ```
+
+    </CodeGroup>
+
+    Visit `http://127.0.0.1:3000/keystatic` to open the Keystatic Admin UI.
+  </Step>
+
+  <Step title="Create your first post">
+    In the Admin UI, navigate to **Posts** and create a new entry. Give it a title and some content, then click **Save**.
+
+    Keystatic writes the file to `src/content/posts/` as a `.mdoc` file:
+
+    ```
+    src
+    └── content
+        └── posts
+            └── my-first-post.mdoc
+    ```
+
+    The saved file will look like this:
+
+    ```markdown src/content/posts/my-first-post.mdoc
+    ---
+    title: My First Post
+    ---
+
+    This is my very first post. I am **super** excited.
+    ```
+  </Step>
+
+  <Step title="Read content in your Next.js pages">
+    Keystatic provides a [Reader API](/reader/overview) for fetching content server-side. Use it in Server Components or `getStaticProps` — it reads directly from the filesystem with no network requests.
+
+    <Tabs>
+      <Tab title="App Router (Server Component)">
+        **List all posts**
+
+        ```tsx src/app/posts/page.tsx
+        import { createReader } from '@keystatic/core/reader';
+        import keystaticConfig from '../../../keystatic.config';
+        import Link from 'next/link';
+
+        const reader = createReader(process.cwd(), keystaticConfig);
+
+        export default async function Page() {
+          const posts = await reader.collections.posts.all();
+          return (
+            <ul>
+              {posts.map(post => (
+                <li key={post.slug}>
+                  <Link href={`/posts/${post.slug}`}>{post.entry.title}</Link>
+                </li>
+              ))}
+            </ul>
+          );
+        }
+        ```
+
+        **Display a single post**
+
+        ```tsx src/app/posts/[slug]/page.tsx
+        import { createReader } from '@keystatic/core/reader';
+        import Markdoc from '@markdoc/markdoc';
+        import React from 'react';
+        import keystaticConfig from '../../../../keystatic.config';
+
+        const reader = createReader(process.cwd(), keystaticConfig);
+
+        export default async function Post({ params }: { params: { slug: string } }) {
+          const post = await reader.collections.posts.read(params.slug);
+          if (!post) return <div>Post not found</div>;
+
+          const { node } = await post.content();
+          const errors = Markdoc.validate(node);
+          if (errors.length) throw new Error('Invalid content');
+
+          const renderable = Markdoc.transform(node);
+          return (
+            <>
+              <h1>{post.title}</h1>
+              {Markdoc.renderers.react(renderable, React)}
+            </>
+          );
+        }
+        ```
+      </Tab>
+      <Tab title="Pages Router (getStaticProps)">
+        **List all posts**
+
+        ```tsx pages/posts/index.tsx
+        import { createReader } from '@keystatic/core/reader';
+        import keystaticConfig from '../../keystatic.config';
+        import Link from 'next/link';
+
+        const reader = createReader(process.cwd(), keystaticConfig);
+
+        export async function getStaticProps() {
+          const posts = await reader.collections.posts.all();
+          return { props: { posts } };
+        }
+
+        export default function PostsPage({ posts }: { posts: { slug: string; entry: { title: string } }[] }) {
+          return (
+            <ul>
+              {posts.map(post => (
+                <li key={post.slug}>
+                  <Link href={`/posts/${post.slug}`}>{post.entry.title}</Link>
+                </li>
+              ))}
+            </ul>
+          );
+        }
+        ```
+
+        **Display a single post**
+
+        ```tsx pages/posts/[slug].tsx
+        import { createReader } from '@keystatic/core/reader';
+        import Markdoc from '@markdoc/markdoc';
+        import React from 'react';
+        import keystaticConfig from '../../../keystatic.config';
+
+        const reader = createReader(process.cwd(), keystaticConfig);
+
+        export async function getStaticPaths() {
+          const posts = await reader.collections.posts.all();
+          return {
+            paths: posts.map(post => ({ params: { slug: post.slug } })),
+            fallback: false,
+          };
+        }
+
+        export async function getStaticProps({ params }: { params: { slug: string } }) {
+          const post = await reader.collections.posts.read(params.slug);
+          if (!post) return { notFound: true };
+          const { node } = await post.content();
+          const renderable = Markdoc.transform(node);
+          return { props: { title: post.title, content: renderable } };
+        }
+
+        export default function PostPage({ title, content }: { title: string; content: any }) {
+          return (
+            <>
+              <h1>{title}</h1>
+              {Markdoc.renderers.react(content, React)}
+            </>
+          );
+        }
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+</Steps>
+
+## Deployment
+
+Keystatic uses Next.js API routes, so your hosting provider must support Node.js runtime. Vercel and similar platforms work out of the box.
+
+For team-based content editing on your deployed site, connect Keystatic to a GitHub repository using [GitHub mode](/storage/github-mode).
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="GitHub mode" icon="github" href="/storage/github-mode">
+    Connect Keystatic to a GitHub repository for team editing on deployed sites.
+  </Card>
+  <Card title="Reader API" icon="book-open" href="/reader/overview">
+    Full reference for reading collections and singletons in your frontend.
+  </Card>
+  <Card title="Fields API" icon="list" href="/fields/overview">
+    Explore all available field types for your content schema.
+  </Card>
+  <Card title="Disable Admin UI in production" icon="lock" href="/recipes/nextjs-disable-admin-ui-in-production">
+    Prevent public access to the Admin UI on your production deployment.
+  </Card>
+</CardGroup>
