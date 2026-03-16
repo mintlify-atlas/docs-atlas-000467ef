@@ -1,0 +1,177 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "Keystatic",
+  "projectDescription": "A TypeScript-first CMS that stores content as Markdown, YAML, or JSON files and connects directly to GitHub — no database required.",
+  "theme": "palm",
+  "primaryColor": "#8c8b86",
+  "lightColor": "#282826",
+  "darkColor": "#60615e",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "quick-start",
+              "cloud"
+            ]
+          },
+          {
+            "group": "Integration Guides",
+            "pages": [
+              "installation/astro",
+              "installation/next-js",
+              "installation/remix"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/configuration",
+              "concepts/collections",
+              "concepts/singletons",
+              "concepts/content-organisation",
+              "concepts/path-wildcard",
+              "concepts/format-options",
+              "concepts/entry-layout",
+              "concepts/user-interface",
+              "concepts/content-components"
+            ]
+          },
+          {
+            "group": "Storage Modes",
+            "pages": [
+              "storage/local-mode",
+              "storage/github-mode"
+            ]
+          },
+          {
+            "group": "Reader API",
+            "pages": [
+              "reader/overview"
+            ]
+          },
+          {
+            "group": "Recipes",
+            "pages": [
+              "recipes/real-time-previews",
+              "recipes/astro-images",
+              "recipes/astro-disable-admin-ui-in-production",
+              "recipes/nextjs-disable-admin-ui-in-production"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Fields API",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "fields/overview"
+            ]
+          },
+          {
+            "group": "Text & Numbers",
+            "pages": [
+              "fields/text",
+              "fields/integer",
+              "fields/number",
+              "fields/url",
+              "fields/slug",
+              "fields/date",
+              "fields/datetime"
+            ]
+          },
+          {
+            "group": "Rich Content",
+            "pages": [
+              "fields/markdoc",
+              "fields/mdx",
+              "fields/document"
+            ]
+          },
+          {
+            "group": "Media & Files",
+            "pages": [
+              "fields/image",
+              "fields/cloud-image",
+              "fields/file"
+            ]
+          },
+          {
+            "group": "Selection",
+            "pages": [
+              "fields/select",
+              "fields/multiselect",
+              "fields/checkbox",
+              "fields/conditional"
+            ]
+          },
+          {
+            "group": "Structure",
+            "pages": [
+              "fields/object",
+              "fields/array",
+              "fields/blocks",
+              "fields/relationship",
+              "fields/path-reference",
+              "fields/child",
+              "fields/ignored"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "TypeScript-first API with full type safety",
+    "Git-based storage — Markdown, YAML, and JSON, no database",
+    "Visual Admin UI for editing content",
+    "Supports local filesystem, GitHub, and Keystatic Cloud storage",
+    "Framework integrations for Next.js, Astro, and Remix",
+    "Rich content fields including Markdoc and MDX editors",
+    "Reader API for fetching content at build time or server-side",
+    "Real-time content previews",
+    "CLI scaffolding tool (create-keystatic)"
+  ],
+  "publicApiSurface": [
+    "config() — @keystatic/core",
+    "collection() — @keystatic/core",
+    "singleton() — @keystatic/core",
+    "fields.text()",
+    "fields.markdoc()",
+    "fields.mdx()",
+    "fields.document()",
+    "fields.image()",
+    "fields.cloudImage()",
+    "fields.file()",
+    "fields.select()",
+    "fields.multiselect()",
+    "fields.checkbox()",
+    "fields.date()",
+    "fields.datetime()",
+    "fields.integer()",
+    "fields.number()",
+    "fields.url()",
+    "fields.slug()",
+    "fields.array()",
+    "fields.object()",
+    "fields.blocks()",
+    "fields.conditional()",
+    "fields.relationship()",
+    "fields.pathReference()",
+    "fields.child()",
+    "fields.ignored()",
+    "createReader() — @keystatic/core/reader",
+    "createGitHubReader() — @keystatic/core/reader/github",
+    "Entry<T> — type helper",
+    "EntryWithResolvedLinkedFiles<T> — type helper",
+    "DocumentRenderer — @keystatic/core/renderer",
+    "makeRouteHandler() — @keystatic/astro",
+    "makeRouteHandler() — @keystatic/next"
+  ]
+}
